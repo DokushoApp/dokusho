@@ -1,8 +1,0 @@
-@import "tailwindcss";
-
-@theme inline {
-    /* Configure your theme variables here */
-    --font-display: "Inter", "sans-serif";
-    --color-primary-500: oklch(0.84 0.18 117.33);
-    --spacing: 0.25rem;
-}
