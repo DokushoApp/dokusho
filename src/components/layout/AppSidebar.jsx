@@ -4,17 +4,16 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup, SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem
+  SidebarHeader,
+  SidebarMenu, SidebarMenuButton, SidebarMenuItem
 } from "../ui/sidebar.jsx";
 import {
   IconLibrary,
   IconSearch,
   IconSettings,
   IconHistory,
-  IconTorii,
+  IconTorii
 } from "@tabler/icons-react";
-import {motion} from "motion/react";
 import {NavLink} from "react-router";
 
 export function AppSidebar() {
@@ -35,18 +34,20 @@ export function AppSidebar() {
       url: "/history",
       icon: IconHistory,
     },
-    {
-      title: "Settings",
-      url: "/settings",
-      icon: IconSettings,
-    },
   ]
   const [open, setOpen] = useState(true);
   return (
     <Sidebar>
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem className="flex flex-row p-1 gap-2">
+            <IconTorii />
+            <h1>Dokusho</h1>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Application</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
@@ -63,6 +64,17 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <NavLink to="/settings">
+                <IconSettings />
+                <span>Settings</span>
+              </NavLink>
+            </SidebarMenuButton> </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }

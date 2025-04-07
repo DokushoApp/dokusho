@@ -2,7 +2,7 @@
 import React from 'react';
 import {Outlet} from 'react-router';
 import {AppSidebar} from './AppSidebar.jsx';
-import {cn} from "../../lib/utils.js";
+import {cn} from "@/lib/utils.js";
 import {SidebarInset, SidebarProvider, SidebarTrigger} from "../ui/sidebar.jsx";
 
 const Base = () => {
