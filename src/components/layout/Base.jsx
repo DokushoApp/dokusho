@@ -1,9 +1,12 @@
 // Layout.jsx
 import React from 'react';
-import {Outlet} from 'react-router';
+import {NavLink, Outlet} from 'react-router';
 import {AppSidebar} from './AppSidebar.jsx';
 import {cn} from "@/lib/utils.js";
-import {SidebarInset, SidebarProvider, SidebarTrigger} from "../ui/sidebar.jsx";
+import {SidebarInset, SidebarProvider, SidebarTrigger} from "@/components/ui/sidebar.jsx";
+import {DynamicBreadcrumb} from "@/components/ui/dynamicbreadcrumb.jsx"
+import {Separator} from "@/components/ui/separator.jsx";
+
 
 const Base = () => {
   return (
@@ -19,8 +22,10 @@ const Base = () => {
       >
         <AppSidebar variant="inset"/>
         <SidebarInset className={"p-2"}>
-          <div>
+          <div className={"flex flex-row items-center gap-2"}>
             <SidebarTrigger/>
+            <Separator orientation="vertical" className={"my-2"} />
+            <DynamicBreadcrumb />
           </div>
           <Outlet/>
         </SidebarInset>
