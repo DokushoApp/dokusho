@@ -98,16 +98,30 @@ We welcome contributions to Dokusho! Please see our [Contributing Guide](CONTRIB
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📄 License
-
-Distributed under the MIT License. See `LICENSE` for more information.
-
 ## 🔗 Links
 
 - [Website](https://dokusho.app)
 - [Documentation](https://docs.dokusho.app)
 - [GitHub Repository](https://github.com/dokushoapp/dokusho)
 - [Issue Tracker](https://github.com/dokushoapp/dokusho/issues)
+
+### License
+
+[![GNU GPLv3 Image](https://www.gnu.org/graphics/gplv3-127x51.png)](http://www.gnu.org/licenses/gpl-3.0.en.html)
+
+<div align="left">
+
+You may copy, distribute and modify the software as long as you track changes/dates in source files. Any modifications to or software including (via compiler) GPL-licensed code must also be made available under the GPL along with build & install instructions.
+
+</div>
+
+### DMCA disclaimer
+
+<div align="left">
+
+The developers of this application do not have any affiliation with the content available in the app. It collects content from sources that are freely available through any web browser.
+
+</div>
 
 ---
 
