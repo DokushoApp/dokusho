@@ -1,12 +1,5 @@
 import React, { useState } from "react";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -44,15 +37,8 @@ const SettingsScreen = () => {
   ];
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="flex flex-col space-y-8 pb-16">
-        <div className="space-y-0.5">
-          <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
-          <p className="text-muted-foreground">
-            Configure your manga reader preferences
-          </p>
-        </div>
-
+    <div className="container mx-auto px-4">
+      <div className="flex flex-col">
         <Menubar
           menuItems={settingsTabs}
           initialItem={activeTab}
@@ -60,25 +46,20 @@ const SettingsScreen = () => {
           allowAddItem={false}
         />
 
-        {/* Settings Content */}
-        <div className="space-y-4">
+        <div>
           {/* General Settings */}
           {activeTab === "general" && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  General Settings
-                </CardTitle>
-                <CardDescription>
-                  Configure the appearance and behavior of the app
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Default Category Tab */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="defaultCategoryTab">Default Category Tab</Label>
-                  </div>
+            <div className="space-y-6">
+              <p className="text-muted-foreground text-left mb-4">
+                Configure the appearance and behavior of the app
+              </p>
+
+
+
+              {/* Default Category Tab */}
+              <div className="flex items-center">
+                <Label htmlFor="defaultCategoryTab" className="w-48">Default Category Tab</Label>
+                <div className="w-64">
                   <Select
                     value={defaultCategoryTab}
                     onValueChange={setDefaultCategoryTab}
@@ -95,18 +76,16 @@ const SettingsScreen = () => {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
 
-                {/* Manga Card Grid */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="mangaCardGrid">Manga Card Grid</Label>
-                    <span className="text-sm text-muted-foreground">
-                      {mangaCardGrid} columns
-                    </span>
-                  </div>
+              {/* Manga Card Grid */}
+              <div className="flex items-center">
+                <Label htmlFor="mangaCardGrid" className="w-48">Manga Card Grid</Label>
+                <div className="flex items-center gap-4">
                   <Select
                     value={mangaCardGrid}
                     onValueChange={setMangaCardGrid}
+                    className="w-64"
                   >
                     <SelectTrigger id="mangaCardGrid">
                       <SelectValue placeholder="Select grid columns" />
@@ -119,59 +98,56 @@ const SettingsScreen = () => {
                       <SelectItem value="6">6 Columns</SelectItem>
                     </SelectContent>
                   </Select>
+                  <span className="text-sm text-muted-foreground w-24">
+                    {mangaCardGrid} columns
+                  </span>
                 </div>
+              </div>
 
-                {/* Manga Card Size */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="cardSize">Manga Card Size</Label>
-                    <span className="text-sm text-muted-foreground">
-                      {mangaCardSize}%
-                    </span>
-                  </div>
+              {/* Manga Card Size */}
+              <div className="flex items-center">
+                <Label htmlFor="cardSize" className="w-48">Manga Card Size</Label>
+                <div className="flex items-center gap-4">
                   <Slider
                     id="cardSize"
+                    className="w-48"
                     min={25}
                     max={100}
                     step={5}
                     value={[mangaCardSize]}
                     onValueChange={(value) => setMangaCardSize(value[0])}
                   />
+                  <span className="text-sm text-muted-foreground w-16">
+                    {mangaCardSize}%
+                  </span>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
           {/* Library Settings */}
           {activeTab === "library" && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  Library Settings
-                </CardTitle>
-                <CardDescription>
-                  Configure how your manga library is organized
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Edit Categories */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label>Edit Categories</Label>
-                    <Button variant="outline" size="sm" className="gap-1">
-                      Manage
-                    </Button>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Add, remove, or rearrange your manga categories
-                  </p>
-                </div>
+            <div className="space-y-6">
+              <p className="text-muted-foreground text-left mb-4">
+                Configure how your manga library is organized
+              </p>
 
-                {/* Default Category */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="defaultCategory">Default Category</Label>
-                  </div>
+
+
+              {/* Edit Categories */}
+              <div className="flex items-center">
+                <Label className="w-48">Edit Categories</Label>
+                <div>
+                  <Button variant="outline" size="sm" className="gap-1">
+                    Manage
+                  </Button>
+                </div>
+              </div>
+
+              {/* Default Category */}
+              <div className="flex items-center">
+                <Label htmlFor="defaultCategory" className="w-48">Default Category</Label>
+                <div className="w-64">
                   <Select
                     value={defaultCategory}
                     onValueChange={setDefaultCategory}
@@ -188,27 +164,23 @@ const SettingsScreen = () => {
                     </SelectContent>
                   </Select>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
           {/* Reader Settings */}
           {activeTab === "reader" && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  Reader Settings
-                </CardTitle>
-                <CardDescription>
-                  Configure your reading experience
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Reading Mode */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="readingMode">Reading Mode</Label>
-                  </div>
+            <div className="space-y-6">
+              <p className="text-muted-foreground text-left mb-4">
+                Configure your reading experience
+              </p>
+
+
+
+              {/* Reading Mode */}
+              <div className="flex items-center">
+                <Label htmlFor="readingMode" className="w-48">Reading Mode</Label>
+                <div className="w-64">
                   <Select
                     value={readingMode}
                     onValueChange={setReadingMode}
@@ -224,12 +196,12 @@ const SettingsScreen = () => {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
 
-                {/* Reading Page Layout */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="readingLayout">Reading Page Layout</Label>
-                  </div>
+              {/* Reading Page Layout */}
+              <div className="flex items-center">
+                <Label htmlFor="readingLayout" className="w-48">Reading Page Layout</Label>
+                <div className="w-64">
                   <Select
                     value={readingLayout}
                     onValueChange={setReadingLayout}
@@ -244,119 +216,124 @@ const SettingsScreen = () => {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
 
-                {/* Reader Zoom */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="readerZoom">Reader Zoom</Label>
-                    <span className="text-sm text-muted-foreground">
-                      {readerZoom}%
-                    </span>
-                  </div>
+              {/* Reader Zoom */}
+              <div className="flex items-center">
+                <Label htmlFor="readerZoom" className="w-48">Reader Zoom</Label>
+                <div className="flex items-center gap-4">
                   <Slider
                     id="readerZoom"
+                    className="w-48"
                     min={50}
                     max={200}
                     step={10}
                     value={[readerZoom]}
                     onValueChange={(value) => setReaderZoom(value[0])}
                   />
+                  <span className="text-sm text-muted-foreground w-16">
+                    {readerZoom}%
+                  </span>
                 </div>
+              </div>
 
-                {/* Reader Padding */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="readerPadding">Reader Padding</Label>
-                    <span className="text-sm text-muted-foreground">
-                      {readerPadding}px
-                    </span>
-                  </div>
+              {/* Reader Padding */}
+              <div className="flex items-center">
+                <Label htmlFor="readerPadding" className="w-48">Reader Padding</Label>
+                <div className="flex items-center gap-4">
                   <Slider
                     id="readerPadding"
+                    className="w-48"
                     min={0}
                     max={50}
                     step={5}
                     value={[readerPadding]}
                     onValueChange={(value) => setReaderPadding(value[0])}
                   />
+                  <span className="text-sm text-muted-foreground w-16">
+                    {readerPadding}px
+                  </span>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
           {/* Extension Settings */}
           {activeTab === "extension" && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  Extension Settings
-                </CardTitle>
-                <CardDescription>
-                  Configure extension sources and filters
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Extension Repository */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label>Extension Repository</Label>
-                    <Button variant="outline" size="sm">
-                      Manage
-                    </Button>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Add, remove, or update manga source extensions
-                  </p>
-                </div>
+            <div className="space-y-6">
+              <p className="text-muted-foreground text-left mb-4">
+                Configure extension sources and filters
+              </p>
 
-                {/* Show NSFW */}
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="showNSFW">Show NSFW</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Allow mature content to be displayed
-                    </p>
-                  </div>
+
+
+              {/* Extension Repository */}
+              <div className="flex items-center">
+                <Label className="w-48">Extension Repository</Label>
+                <div>
+                  <Button variant="outline" size="sm">
+                    Manage
+                  </Button>
+                </div>
+              </div>
+
+              {/* Show NSFW */}
+              <div className="flex items-center">
+                <Label htmlFor="showNSFW" className="w-48">Show NSFW</Label>
+                <div>
                   <Switch
                     id="showNSFW"
                     checked={showNSFW}
                     onCheckedChange={setShowNSFW}
                   />
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
           {/* About */}
           {activeTab === "about" && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  About
-                </CardTitle>
-                <CardDescription>
-                  Information about the application
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="text-center space-y-2">
-                  <h3 className="text-xl font-bold">Manga Reader</h3>
-                  <p className="text-sm text-muted-foreground">Version 1.0.0 Beta</p>
-
-                  <div className="py-4">
-                    <p className="text-sm">
-                      A modern manga reader application with library management
-                    </p>
-                  </div>
-
-                  <div className="pt-4 border-t">
-                    <Button variant="outline" size="sm" className="mx-auto">
-                      Check for Updates
-                    </Button>
-                  </div>
+            <div className="space-y-4">
+              <p className="text-muted-foreground text-left mb-4">
+                Information about the application
+              </p>
+              <div className="flex items-center">
+                <Label className="w-48">Version</Label>
+                <div>
+                  <p className="text-sm">1.0.0 Beta</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+
+              <div className="flex items-center">
+                <Label className="w-48">Last Updated</Label>
+                <div>
+                  <p className="text-sm">April 7, 2025</p>
+                </div>
+              </div>
+
+              <div className="flex items-center">
+                <Label className="w-48">GitHub</Label>
+                <div>
+                  <a href="https://github.com/uday-samsani/dokusho" className="text-sm text-blue-500 hover:underline">github.com/uday-samsani/dokusho</a>
+                </div>
+              </div>
+
+              <div className="flex items-center">
+                <Label className="w-48">Website</Label>
+                <div>
+                  <a href="https://dokusho.app" className="text-sm text-blue-500 hover:underline">dokusho.app</a>
+                </div>
+              </div>
+
+              <div className="flex items-center pt-2">
+                <div className="w-48"></div>
+                <div>
+                  <Button variant="outline" size="sm">
+                    Check for Updates
+                  </Button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>

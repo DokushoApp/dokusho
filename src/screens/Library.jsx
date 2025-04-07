@@ -14,7 +14,7 @@ function Library() {
   ];
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex flex-1 flex-col px-4">
       <MenuBar
         menuItems={categories}
         initialItem={selectedCategory}

@@ -92,7 +92,7 @@ const MenuBar = ({
   return (
     <div className="w-full mb-6 relative">
       <ScrollArea className="w-full whitespace-nowrap">
-        <div className="flex items-center px-2 pt-4 pb-1 gap-6 relative">
+        <div className="flex items-center pt-4 pb-1 gap-6 relative">
           <div
             ref={indicatorRef}
             className="absolute bottom-0 h-0.5 bg-primary transition-all duration-300 ease-in-out"
