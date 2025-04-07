@@ -1,7 +1,7 @@
 # Dokusho
 
 <div align="center">
-  <img src="public/tauri.svg" alt="Dokusho Logo" width="180" height="180">
+  <img src="src/assets/dokusho.png" alt="Dokusho Logo" width="180" height="180">
   <h3>Modern manga reader built with Tauri and React</h3>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
