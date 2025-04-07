@@ -1,9 +1,11 @@
 import {Origami} from "lucide-react";
 import React from "react";
+import CategoryMenu from "@/components/layout/CategoryMenu.jsx";
 
 function Library() {
   return (
-    <div className="flex flex-1">
+    <div className="flex flex-1 flex-col">
+      <CategoryMenu className={"w-full"}/>
       <div
         className="flex h-full w-full flex-1 flex-col justify-center m-auto gap-2 bg-white text-gray-100 p-2 md:p-10  dark:bg-neutral-900">
         <div className="flex flex-col items-center">
