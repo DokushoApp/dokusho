@@ -15,6 +15,7 @@ import {
   IconTorii
 } from "@tabler/icons-react";
 import {NavLink} from "react-router";
+import Icon from "@/assets/icon.png"
 
 export function AppSidebar() {
   // Menu items.
@@ -40,8 +41,8 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader>
         <SidebarMenu>
-          <SidebarMenuItem className="flex flex-row p-1 gap-2">
-            <IconTorii />
+          <SidebarMenuItem className="flex flex-row p-1 gap-2 items-center">
+            <img src={Icon} alt={"icon"} width="42" />
             <h1>Dokusho</h1>
           </SidebarMenuItem>
         </SidebarMenu>
