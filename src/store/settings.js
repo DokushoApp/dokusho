@@ -1,14 +1,15 @@
 import { atom } from 'jotai';
 import { invoke } from '@tauri-apps/api/core';
 import {BaseDirectory} from "@tauri-apps/api/path";
-import {readFile, stat} from "@tauri-apps/plugin-fs";
+import {exists, readFile, readTextFile, stat, writeTextFile} from "@tauri-apps/plugin-fs";
+import {save} from "@tauri-apps/plugin-dialog";
 
 
 // Default settings values
 export const defaultSettings = {
   theme: 'system',
   sidebar_collapsed: false,
-  default_category_tab: "Reading",
+  default_category_tab: "reading",
   manga_card_grid: 3,
   manga_card_size: "medium",
   categories:[
@@ -28,33 +29,52 @@ export const defaultSettings = {
 };
 
 // Create a single settings atom
-export const settingsAtom = atom(defaultSettings);
+const fileExists = await exists("settings.json", {
+  baseDir: BaseDirectory.AppData,
+});
+
+console.log({fileExists});
+if(!fileExists) {
+  await writeTextFile("settings.json", JSON.stringify(defaultSettings),{
+    baseDir: BaseDirectory.AppData,
+  });
+}
+const file = await readTextFile("settings.json", {
+  baseDir: BaseDirectory.AppData,
+})
+
+const settings = JSON.parse(file);
+export const settingsAtom = atom(settings);
 
 // Loading state atom
 export const isLoadingAtom = atom(true);
 export const errorAtom = atom(null);
 
-// Atom to load settings from storage
 export const loadSettingsAtom = atom(
   null,
   async (get, set) => {
     try {
       set(isLoadingAtom, true);
       set(errorAtom, null);
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
 
+      const fileExists = await exists("settings.json", {
+        baseDir: BaseDirectory.AppData,
+      });
 
->>>>>>> Stashed changes
-=======
+      console.log({fileExists});
+      if(!fileExists) {
+        await writeTextFile("settings.json", JSON.stringify(defaultSettings),{
+          baseDir: BaseDirectory.AppData,
+        });
+      }
+      const file = await readTextFile("settings.json", {
+        baseDir: BaseDirectory.AppData,
+      })
 
+      const settings = JSON.parse(file);
+      set(settingsAtom, settings);
 
->>>>>>> Stashed changes
-      // const settings = await invoke('get_settings');
-      // set(settingsAtom, settings);
-
-      // return settings;
+      return settings;
     } catch (error) {
       console.error('Failed to load settings:', error);
       set(errorAtom, error.toString());
@@ -70,35 +90,14 @@ export const saveSettingsAtom = atom(
   null,
   async (get, set) => {
     try {
-      // const settings = get(settingsAtom);
-      // await invoke('save_settings', { settings });
-      // return true;
+      const settings = get(settingsAtom);
+      await writeTextFile("settings.json", JSON.stringify(settings),{
+        baseDir: BaseDirectory.AppData,
+      });
+      console.log(true)
+      return true;
     } catch (error) {
       console.error('Failed to save settings:', error);
-      set(errorAtom, error.toString());
-      return false;
-    }
-  }
-);
-
-// Function to update a specific setting
-export const updateSettingAtom = atom(
-  null,
-  async (get, set, { key, value }) => {
-    try {
-      const currentSettings = get(settingsAtom);
-      const newSettings = {
-        ...currentSettings,
-        [key]: value
-      };
-
-      set(settingsAtom, newSettings);
-
-      // Save settings after updating
-      const write = get(saveSettingsAtom);
-      return await write();
-    } catch (error) {
-      console.error(`Failed to update setting ${key}:`, error);
       set(errorAtom, error.toString());
       return false;
     }
@@ -112,9 +111,10 @@ export const resetSettingsAtom = atom(
     try {
       set(settingsAtom, defaultSettings);
 
-      // Save the default settings
-      const write = get(saveSettingsAtom);
-      return await write();
+      await writeTextFile("settings.json", JSON.stringify(defaultSettings),{
+        baseDir: BaseDirectory.AppData,
+      });
+      return true;
     } catch (error) {
       console.error('Failed to reset settings:', error);
       set(errorAtom, error.toString());
