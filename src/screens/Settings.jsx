@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Select,
   SelectContent,
@@ -10,22 +10,43 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import Menubar from "@/components/ui/menubar.jsx";
+import Menubar from "@/components/ui/menubar";
+import { useAtom } from "jotai";
+import { focusAtom } from "jotai-optics";
+import { settingsAtom, saveSettingsAtom, resetSettingsAtom } from "@/store/settings";
+import ThemeSelector from "@/components/library/ThemeSelector.jsx";
+
+// Settings Jotai Atoms using focusAtom for precise targeting
+const defaultCategoryTabAtom = focusAtom(settingsAtom, optic => optic.prop("default_category_tab"));
+const mangaCardGridAtom = focusAtom(settingsAtom, optic => optic.prop("manga_card_grid"));
+const mangaCardSizeAtom = focusAtom(settingsAtom, optic => optic.prop("manga_card_size"));
+const categoriesAtom = focusAtom(settingsAtom, optic => optic.prop("categories"));
+const defaultCategoryAtom = focusAtom(settingsAtom, optic => optic.prop("default_category"));
+const readingModeAtom = focusAtom(settingsAtom, optic => optic.prop("reading_mode"));
+const readingPageLayoutAtom = focusAtom(settingsAtom, optic => optic.prop("reading_page_layout"));
+const readerZoomAtom = focusAtom(settingsAtom, optic => optic.prop("reader_zoom"));
+const readerPaddingAtom = focusAtom(settingsAtom, optic => optic.prop("reader_padding"));
+const showNsfwAtom = focusAtom(settingsAtom, optic => optic.prop("show_nsfw"));
 
 const SettingsScreen = () => {
-  // Default settings values
-  const [defaultCategoryTab, setDefaultCategoryTab] = useState("reading");
-  const [mangaCardGrid, setMangaCardGrid] = useState("3");
-  const [mangaCardSize, setMangaCardSize] = useState(50);
-  const [defaultCategory, setDefaultCategory] = useState("reading");
-  const [readingMode, setReadingMode] = useState("leftToRight");
-  const [readingLayout, setReadingLayout] = useState("continuous");
-  const [readerZoom, setReaderZoom] = useState(100);
-  const [readerPadding, setReaderPadding] = useState(10);
-  const [showNSFW, setShowNSFW] = useState(false);
+  // Get individual atoms for each setting
+  const [defaultCategoryTab, setDefaultCategoryTab] = useAtom(defaultCategoryTabAtom);
+  const [mangaCardGrid, setMangaCardGrid] = useAtom(mangaCardGridAtom);
+  const [mangaCardSize, setMangaCardSize] = useAtom(mangaCardSizeAtom);
+  const [categories] = useAtom(categoriesAtom); // Read-only for now
+  const [defaultCategory, setDefaultCategory] = useAtom(defaultCategoryAtom);
+  const [readingMode, setReadingMode] = useAtom(readingModeAtom);
+  const [readingLayout, setReadingLayout] = useAtom(readingPageLayoutAtom);
+  const [readerZoom, setReaderZoom] = useAtom(readerZoomAtom);
+  const [readerPadding, setReaderPadding] = useAtom(readerPaddingAtom);
+  const [showNSFW, setShowNSFW] = useAtom(showNsfwAtom);
+
+  // Get save & reset actions
+  const [, saveSettings] = useAtom(saveSettingsAtom);
+  const [, resetSettings] = useAtom(resetSettingsAtom);
 
   // Active settings tab
-  const [activeTab, setActiveTab] = useState("general");
+  const [activeTab, setActiveTab] = React.useState("general");
 
   // Settings tabs for the MenuBar
   const settingsTabs = [
@@ -35,6 +56,12 @@ const SettingsScreen = () => {
     { id: "extension", name: "Extension" },
     { id: "about", name: "About" }
   ];
+
+  // Auto-save handler for form elements
+  const handleValueChange = (setter, value) => {
+    setter(value);
+    setTimeout(() => saveSettings(), 0);
+  };
 
   return (
     <div className="container mx-auto px-4">
@@ -46,7 +73,7 @@ const SettingsScreen = () => {
           allowAddItem={false}
         />
 
-        <div>
+        <div className="py-6">
           {/* General Settings */}
           {activeTab === "general" && (
             <div className="space-y-6">
@@ -54,7 +81,8 @@ const SettingsScreen = () => {
                 Configure the appearance and behavior of the app
               </p>
 
-
+              {/* Theme - Using the dedicated component */}
+              <ThemeSelector />
 
               {/* Default Category Tab */}
               <div className="flex items-center">
@@ -62,17 +90,17 @@ const SettingsScreen = () => {
                 <div className="w-64">
                   <Select
                     value={defaultCategoryTab}
-                    onValueChange={setDefaultCategoryTab}
+                    onValueChange={(value) => handleValueChange(setDefaultCategoryTab, value)}
                   >
                     <SelectTrigger id="defaultCategoryTab">
                       <SelectValue placeholder="Select default category tab" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="reading">Reading</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="on-hold">On Hold</SelectItem>
-                      <SelectItem value="dropped">Dropped</SelectItem>
-                      <SelectItem value="plan-to-read">Plan to Read</SelectItem>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -83,8 +111,8 @@ const SettingsScreen = () => {
                 <Label htmlFor="mangaCardGrid" className="w-48">Manga Card Grid</Label>
                 <div className="flex items-center gap-4">
                   <Select
-                    value={mangaCardGrid}
-                    onValueChange={setMangaCardGrid}
+                    value={mangaCardGrid.toString()}
+                    onValueChange={(value) => handleValueChange(setMangaCardGrid, parseInt(value, 10))}
                     className="w-64"
                   >
                     <SelectTrigger id="mangaCardGrid">
@@ -108,18 +136,20 @@ const SettingsScreen = () => {
               <div className="flex items-center">
                 <Label htmlFor="cardSize" className="w-48">Manga Card Size</Label>
                 <div className="flex items-center gap-4">
-                  <Slider
-                    id="cardSize"
-                    className="w-48"
-                    min={25}
-                    max={100}
-                    step={5}
-                    value={[mangaCardSize]}
-                    onValueChange={(value) => setMangaCardSize(value[0])}
-                  />
-                  <span className="text-sm text-muted-foreground w-16">
-                    {mangaCardSize}%
-                  </span>
+                  <Select
+                    value={mangaCardSize}
+                    onValueChange={(value) => handleValueChange(setMangaCardSize, value)}
+                    className="w-64"
+                  >
+                    <SelectTrigger id="cardSize">
+                      <SelectValue placeholder="Select card size" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="small">Small</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="large">Large</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
@@ -131,8 +161,6 @@ const SettingsScreen = () => {
               <p className="text-muted-foreground text-left mb-4">
                 Configure how your manga library is organized
               </p>
-
-
 
               {/* Edit Categories */}
               <div className="flex items-center">
@@ -150,17 +178,17 @@ const SettingsScreen = () => {
                 <div className="w-64">
                   <Select
                     value={defaultCategory}
-                    onValueChange={setDefaultCategory}
+                    onValueChange={(value) => handleValueChange(setDefaultCategory, value)}
                   >
                     <SelectTrigger id="defaultCategory">
                       <SelectValue placeholder="Select default category" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="reading">Reading</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="on-hold">On Hold</SelectItem>
-                      <SelectItem value="dropped">Dropped</SelectItem>
-                      <SelectItem value="plan-to-read">Plan to Read</SelectItem>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -175,22 +203,20 @@ const SettingsScreen = () => {
                 Configure your reading experience
               </p>
 
-
-
               {/* Reading Mode */}
               <div className="flex items-center">
                 <Label htmlFor="readingMode" className="w-48">Reading Mode</Label>
                 <div className="w-64">
                   <Select
                     value={readingMode}
-                    onValueChange={setReadingMode}
+                    onValueChange={(value) => handleValueChange(setReadingMode, value)}
                   >
                     <SelectTrigger id="readingMode">
                       <SelectValue placeholder="Select reading mode" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="leftToRight">Left to Right</SelectItem>
-                      <SelectItem value="rightToLeft">Right to Left</SelectItem>
+                      <SelectItem value="left-to-right">Left to Right</SelectItem>
+                      <SelectItem value="right-to-left">Right to Left</SelectItem>
                       <SelectItem value="vertical">Vertical</SelectItem>
                       <SelectItem value="webtoon">Webtoon</SelectItem>
                     </SelectContent>
@@ -204,7 +230,7 @@ const SettingsScreen = () => {
                 <div className="w-64">
                   <Select
                     value={readingLayout}
-                    onValueChange={setReadingLayout}
+                    onValueChange={(value) => handleValueChange(setReadingLayout, value)}
                   >
                     <SelectTrigger id="readingLayout">
                       <SelectValue placeholder="Select page layout" />
@@ -229,7 +255,7 @@ const SettingsScreen = () => {
                     max={200}
                     step={10}
                     value={[readerZoom]}
-                    onValueChange={(value) => setReaderZoom(value[0])}
+                    onValueChange={(value) => handleValueChange(setReaderZoom, value[0])}
                   />
                   <span className="text-sm text-muted-foreground w-16">
                     {readerZoom}%
@@ -248,7 +274,7 @@ const SettingsScreen = () => {
                     max={50}
                     step={5}
                     value={[readerPadding]}
-                    onValueChange={(value) => setReaderPadding(value[0])}
+                    onValueChange={(value) => handleValueChange(setReaderPadding, value[0])}
                   />
                   <span className="text-sm text-muted-foreground w-16">
                     {readerPadding}px
@@ -264,8 +290,6 @@ const SettingsScreen = () => {
               <p className="text-muted-foreground text-left mb-4">
                 Configure extension sources and filters
               </p>
-
-
 
               {/* Extension Repository */}
               <div className="flex items-center">
@@ -284,7 +308,7 @@ const SettingsScreen = () => {
                   <Switch
                     id="showNSFW"
                     checked={showNSFW}
-                    onCheckedChange={setShowNSFW}
+                    onCheckedChange={(value) => handleValueChange(setShowNSFW, value)}
                   />
                 </div>
               </div>
@@ -307,14 +331,15 @@ const SettingsScreen = () => {
               <div className="flex items-center">
                 <Label className="w-48">Last Updated</Label>
                 <div>
-                  <p className="text-sm">April 7, 2025</p>
+                  <p className="text-sm">April 8, 2025</p>
                 </div>
               </div>
 
               <div className="flex items-center">
                 <Label className="w-48">GitHub</Label>
                 <div>
-                  <a href="https://github.com/uday-samsani/dokusho" className="text-sm text-blue-500 hover:underline">github.com/uday-samsani/dokusho</a>
+                  <a href="https://github.com/uday-samsani/dokusho"
+                     className="text-sm text-blue-500 hover:underline">github.com/uday-samsani/dokusho</a>
                 </div>
               </div>
 
@@ -325,11 +350,10 @@ const SettingsScreen = () => {
                 </div>
               </div>
 
-              <div className="flex items-center pt-2">
-                <div className="w-48"></div>
-                <div>
-                  <Button variant="outline" size="sm">
-                    Check for Updates
+              <div className="mt-8 border-t pt-6">
+                <div className="flex items-center justify-between">
+                  <Button variant="outline" onClick={() => resetSettings()}>
+                    Reset All Settings
                   </Button>
                 </div>
               </div>
