@@ -24,7 +24,9 @@
     "@tailwindcss/cli": "^4.1.3",
     "@tailwindcss/postcss": "^4.1.3",
     "@tailwindcss/vite": "^4.1.3",
-    "@tauri-apps/api": "^2",
+    "@tauri-apps/api": "^2.4.1",
+    "@tauri-apps/plugin-dialog": "~2",
+    "@tauri-apps/plugin-fs": "~2",
     "@tauri-apps/plugin-opener": "^2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -39,7 +41,7 @@
     "tw-animate-css": "^1.2.5"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2",
+    "@tauri-apps/cli": "^2.4.1",
     "@vitejs/plugin-react": "^4.3.4",
     "vite": "^6.0.3"
   }
