@@ -12,13 +12,16 @@
   "app": {
     "windows": [
       {
-        "title": "dokusho",
+        "title": "Dokusho",
         "width": 800,
         "height": 600
       }
     ],
     "security": {
-      "csp": null
+      "assetProtocol": {
+        "enable": true
+      },
+      "csp": "default-src 'self' ipc: http://ipc.localhost; img-src 'self' asset: http://asset.localhost"
     }
   },
   "bundle": {
