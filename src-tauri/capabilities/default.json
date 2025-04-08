@@ -9,6 +9,13 @@
     "core:default",
     "opener:default",
     "dialog:default",
-    "fs:default"
+    {
+      "identifier": "fs:default",
+      "allow": [{ "path": "$APPDATA/*" }]
+    },
+    {
+      "identifier": "fs:allow-write-text-file",
+      "allow": [{ "path": "$APPDATA/*" }]
+    }
   ]
 }
