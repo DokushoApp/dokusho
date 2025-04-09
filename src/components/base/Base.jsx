@@ -1,12 +1,9 @@
-// Layout.jsx
 import React from 'react';
-import {NavLink, Outlet} from 'react-router';
+import {Outlet} from 'react-router';
 import {AppSidebar} from './AppSidebar.jsx';
 import {cn} from "@/lib/utils.js";
 import {SidebarInset, SidebarProvider, SidebarTrigger} from "@/components/ui/sidebar.jsx";
-import {DynamicBreadcrumb} from "@/components/ui/dynamicbreadcrumb.jsx"
-import {Separator} from "@/components/ui/separator.jsx";
-import AppBar from "@/components/library/AppBar.jsx";
+import AppBar from "@/components/base/AppBar.jsx";
 
 
 const Base = () => {

@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useAtom } from "jotai";
 import { focusAtom } from "jotai-optics";
 import { settingsAtom, saveSettingsAtom } from "@/store/settings";
-import CategoryManager from "@/components/library/CategoryManager";
+import CategoryManager from "@/components/settings/CategoryManager";
 
 // Settings Jotai Atoms for Library tab
 const categoriesAtom = focusAtom(settingsAtom, optic => optic.prop("categories"));

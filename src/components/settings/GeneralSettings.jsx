@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { useAtom } from "jotai";
 import { focusAtom } from "jotai-optics";
 import { settingsAtom, saveSettingsAtom } from "@/store/settings";
-import ThemeSelector from "@/components/library/ThemeSelector.jsx";
+import ThemeSelector from "@/components/settings/ThemeSelector.jsx";
 
 // Settings Jotai Atoms for General tab
 const defaultCategoryTabAtom = focusAtom(settingsAtom, optic => optic.prop("default_category_tab"));

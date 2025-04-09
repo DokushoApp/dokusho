@@ -60,7 +60,6 @@ export const loadSettingsAtom = atom(
         baseDir: BaseDirectory.AppData,
       });
 
-      console.log({fileExists});
       if(!fileExists) {
         await writeTextFile("settings.json", JSON.stringify(defaultSettings),{
           baseDir: BaseDirectory.AppData,
