@@ -62,7 +62,7 @@ const SortableMenuItem = ({item, isActive, onClick, activeItemRef}) => {
       {...listeners}
     >
       <div
-        className={`py-2 cursor-pointer hover:bg-accent/10 ${isActive ? "font-bold text-foreground" : "font-normal text-muted-foreground"} ${isDragging ? "bg-accent/5" : ""} duration-300`}
+        className={`py-2 cursor-pointer hover:text-primary ${isActive ? "font-bold text-foreground" : "font-normal text-muted-foreground"} ${isDragging ? "bg-accent/5" : ""} duration-300`}
         onClick={(e) => {
           // Only trigger click if not dragging
           if (!isDragging) {
@@ -210,7 +210,7 @@ const DraggableMenuBar = ({
 
             {allowAddItem && (
               <div
-                className="px-2 py-1.5 cursor-pointer text-muted-foreground hover:bg-accent/10 duration-300 flex items-center gap-1"
+                className="px-2 py-1.5 cursor-pointer text-muted-foreground hover:text-primary duration-300 flex items-center gap-1"
                 onClick={() => setIsAddDialogOpen(true)}
               >
                 <Plus size={16} className="duration-300 hover:scale-110"/>
