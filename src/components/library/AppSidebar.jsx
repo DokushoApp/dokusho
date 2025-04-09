@@ -8,12 +8,11 @@ import {
   SidebarMenu, SidebarMenuButton, SidebarMenuItem
 } from "../ui/sidebar.jsx";
 import {
-  IconLibrary,
-  IconSearch,
-  IconSettings,
-  IconHistory,
-  IconTorii
-} from "@tabler/icons-react";
+  Library,
+  Search,
+  Settings,
+  History,
+} from "lucide-react";
 import {NavLink} from "react-router";
 import Icon from "@/assets/icon.png"
 
@@ -23,27 +22,26 @@ export function AppSidebar() {
     {
       title: "Library",
       url: "/",
-      icon: IconLibrary,
+      icon: Library,
     },
     {
       title: "Browse",
       url: "/browse",
-      icon: IconSearch,
+      icon: Search,
     },
     {
       title: "History",
       url: "/history",
-      icon: IconHistory,
+      icon: History,
     },
   ]
-  const [open, setOpen] = useState(true);
   return (
     <Sidebar>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem className="flex flex-row p-1 gap-2 items-center">
             <img src={Icon} alt={"icon"} width="42" />
-            <h1>Dokusho</h1>
+            <span className={"text-lg"}>Dokusho</span>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
@@ -55,8 +53,10 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
+                      <div className={'w-5'}>
+                        <item.icon className={'w-5'} strokeWidth={1.5}/>
+                      </div>
+                      <span className={'text-md'}>{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -70,10 +70,13 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
               <NavLink to="/settings">
-                <IconSettings />
-                <span>Settings</span>
+                <div className={'w-5'}>
+                  <Settings className="w-5" strokeWidth={1.5}/>
+                </div>
+                <span className={'text-md'}>Settings</span>
               </NavLink>
-            </SidebarMenuButton> </SidebarMenuItem>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
