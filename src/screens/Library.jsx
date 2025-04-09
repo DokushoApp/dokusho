@@ -2,26 +2,33 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { Origami, BookOpen, FolderPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import MenuBar from "@/components/ui/menubar.jsx";
+import DraggableMenuBar from "@/components/library/DraggableMenuBar";
 import MangaGrid from "@/components/library/MangaGrid.jsx";
 import { open } from '@tauri-apps/plugin-dialog';
 import { readDir } from '@tauri-apps/plugin-fs';
 import { convertFileSrc } from '@tauri-apps/api/core';
+import { useAtom } from "jotai";
+import { focusAtom } from "jotai-optics";
+import { settingsAtom, saveSettingsAtom } from "@/store/settings";
+
+// Settings Jotai Atoms for categories
+const categoriesAtom = focusAtom(settingsAtom, optic => optic.prop("categories"));
+const defaultCategoryAtom = focusAtom(settingsAtom, optic => optic.prop("default_category"));
 
 function Library() {
   const [mangaList, setMangaList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [activeCategory, setActiveCategory] = useState('reading');
-  const [selectedCategory, setSelectedCategory] = useState('reading');
-  const navigate = useNavigate();
 
-  const categories = [
-    {id: "plan-to-read", name: "Plan to Read"},
-    {id: "reading", name: "Reading"},
-    {id: "on-hold", name: "On Hold"},
-    {id: "completed", name: "Completed"},
-    {id: "dropped", name: "Dropped"}
-  ];
+  // Get categories from settings
+  const [categories, setCategories] = useAtom(categoriesAtom);
+  const [defaultCategory] = useAtom(defaultCategoryAtom);
+  const [, saveSettings] = useAtom(saveSettingsAtom);
+
+  // Use the default category from settings as the initial active category
+  const [activeCategory, setActiveCategory] = useState(defaultCategory);
+  const [selectedCategory, setSelectedCategory] = useState(defaultCategory);
+
+  const navigate = useNavigate();
 
   // Load previously opened manga from storage
   useEffect(() => {
@@ -82,7 +89,6 @@ function Library() {
           ? convertFileSrc(folderPath+"/"+imageFiles[0].name)
           : 'https://placehold.co/200x300/png?text=No+Cover';
 
-
         // Create a new manga entry
         const newManga = {
           id: Date.now().toString(),
@@ -116,14 +122,24 @@ function Library() {
     navigate('/reader', { state: { mangaPath: manga.path } });
   };
 
-  const filteredManga = mangaList.filter(manga => manga.category === selectedCategory);
+  // Handle categories reordering
+  const handleCategoriesReordered = (newCategories) => {
+    setCategories(newCategories);
+    setTimeout(() => saveSettings(), 0);
+  };
+
+  // Filter manga by "all" or specific category
+  const filteredManga = selectedCategory === "all"
+    ? mangaList
+    : mangaList.filter(manga => manga.category === selectedCategory);
 
   return (
     <div className="flex flex-1 flex-col">
-      <MenuBar
+      <DraggableMenuBar
         menuItems={categories}
         initialItem={selectedCategory}
         onItemSelect={handleCategorySelect}
+        onItemsReordered={handleCategoriesReordered}
         allowAddItem={true}
         addItemTitle="Add New Category"
         addItemPlaceholder="Enter category name"
