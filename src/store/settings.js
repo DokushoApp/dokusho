@@ -10,9 +10,9 @@ export const defaultSettings = {
   theme: 'system',
   sidebar_collapsed: false,
   default_category_tab: "reading",
-  manga_card_grid: 3,
   manga_card_size: "medium",
   categories:[
+    {id: "all", name: "All"},
     {id: "plan-to-read", name: "Plan to Read"},
     {id: "reading", name: "Reading"},
     {id: "on-hold", name: "On Hold"},
@@ -33,7 +33,6 @@ const fileExists = await exists("settings.json", {
   baseDir: BaseDirectory.AppData,
 });
 
-console.log({fileExists});
 if(!fileExists) {
   await writeTextFile("settings.json", JSON.stringify(defaultSettings),{
     baseDir: BaseDirectory.AppData,
