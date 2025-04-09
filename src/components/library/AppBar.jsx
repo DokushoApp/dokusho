@@ -5,9 +5,11 @@ import React from "react";
 
 const AppBar = () => {
   return (
-    <div className={"flex flex-row w-full items-center gap-2 px-3"}>
+    <div className="flex flex-row w-full items-center gap-2 px-3">
       <SidebarTrigger/>
-      <Separator orientation="vertical" className={"my-2"}/>
+      <div className="h-5 flex items-center justify-center">
+        <Separator orientation="vertical" className="h-5" />
+      </div>
       <DynamicBreadcrumb/>
     </div>
   )
