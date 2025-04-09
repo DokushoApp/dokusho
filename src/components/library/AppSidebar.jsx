@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -16,8 +16,8 @@ import {
 import {NavLink} from "react-router";
 import Icon from "@/assets/icon.png"
 
+
 export function AppSidebar() {
-  // Menu items.
   const items = [
     {
       title: "Library",
@@ -41,7 +41,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem className="flex flex-row p-1 gap-2 items-center">
             <img src={Icon} alt={"icon"} width="42" />
-            <span className={"text-lg"}>Dokusho</span>
+            <span className={"text-lg font-medium"}>Dokusho</span>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
@@ -54,9 +54,9 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url}>
                       <div className={'w-5'}>
-                        <item.icon className={'w-5'} strokeWidth={1.5}/>
+                        <item.icon className={'w-5'} strokeWidth={2}/>
                       </div>
-                      <span className={'text-md'}>{item.title}</span>
+                      <span className={'text-md font-medium'}>{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -71,9 +71,9 @@ export function AppSidebar() {
             <SidebarMenuButton asChild>
               <NavLink to="/settings">
                 <div className={'w-5'}>
-                  <Settings className="w-5" strokeWidth={1.5}/>
+                  <Settings className="w-5" strokeWidth={2}/>
                 </div>
-                <span className={'text-md'}>Settings</span>
+                <span className={'text-md font-medium'}>Settings</span>
               </NavLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
