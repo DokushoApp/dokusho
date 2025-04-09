@@ -5,7 +5,7 @@ import React from "react";
 
 const AppBar = () => {
   return (
-    <div className={"flex flex-row items-center gap-2 px-4"}>
+    <div className={"flex flex-row w-full items-center gap-2 px-3"}>
       <SidebarTrigger/>
       <Separator orientation="vertical" className={"my-2"}/>
       <DynamicBreadcrumb/>
