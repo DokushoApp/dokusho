@@ -6,6 +6,7 @@ import {cn} from "@/lib/utils.js";
 import {SidebarInset, SidebarProvider, SidebarTrigger} from "@/components/ui/sidebar.jsx";
 import {DynamicBreadcrumb} from "@/components/ui/dynamicbreadcrumb.jsx"
 import {Separator} from "@/components/ui/separator.jsx";
+import AppBar from "@/components/library/AppBar.jsx";
 
 
 const Base = () => {
@@ -22,12 +23,10 @@ const Base = () => {
       >
         <AppSidebar variant="inset"/>
         <SidebarInset className={"p-2"}>
-          <div className={"flex flex-row items-center gap-2"}>
-            <SidebarTrigger/>
-            <Separator orientation="vertical" className={"my-2"} />
-            <DynamicBreadcrumb />
+          <AppBar/>
+          <div className="px-4 flex flex-1">
+            <Outlet/>
           </div>
-          <Outlet/>
         </SidebarInset>
       </SidebarProvider>
 
