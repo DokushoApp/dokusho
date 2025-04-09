@@ -2,11 +2,11 @@ import React from "react";
 import Menubar from "@/components/ui/menubar";
 
 // Import the individual settings components
-import GeneralSettings from "@/components/library/GeneralSettings";
-import LibrarySettings from "@/components/library/LibrarySettings";
-import ReaderSettings from "@/components/library/ReaderSettings";
-import ExtensionSettings from "@/components/library/ExtensionSettings";
-import AboutSettings from "@/components/library/AboutSettings";
+import GeneralSettings from "@/components/settings/GeneralSettings";
+import LibrarySettings from "@/components/settings/LibrarySettings";
+import ReaderSettings from "@/components/settings/ReaderSettings";
+import ExtensionSettings from "@/components/settings/ExtensionSettings";
+import AboutSettings from "@/components/settings/AboutSettings";
 
 const SettingsScreen = () => {
   // Active settings tab
