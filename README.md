@@ -68,6 +68,7 @@ This will create platform-specific installers in the `src-tauri/target/release/b
 - **Frontend**:
     - [React](https://reactjs.org/)
     - [Tailwind CSS](https://tailwindcss.com/) with shadcn/ui components
+    - [dnd kit](https://dndkit.com) for draggable components
 
 - **Backend**:
     - [Tauri](https://tauri.app/) (Rust-based native framework)

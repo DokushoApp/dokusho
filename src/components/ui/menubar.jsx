@@ -103,10 +103,10 @@ const MenuBar = ({
             <span
               key={item.id}
               ref={el => itemRefs.current[item.id] = el}
-              className={`cursor-pointer text-sm hover:text-primary transition-colors relative pb-1 ${
+              className={`cursor-pointer hover:text-primary transition-colors relative pb-1 ${
                 selectedItem === item.id
-                  ? "font-semibold text-primary"
-                  : "text-muted-foreground"
+                  ? "font-bold text-foreground"
+                  : "font-normal text-muted-foreground"
               }`}
               onClick={() => handleItemSelect(item.id)}
             >
