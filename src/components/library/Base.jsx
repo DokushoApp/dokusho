@@ -29,7 +29,6 @@ const Base = () => {
           </div>
         </SidebarInset>
       </SidebarProvider>
-
     </div>
   );
 };
