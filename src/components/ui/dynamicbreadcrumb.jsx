@@ -49,10 +49,10 @@ const DynamicBreadcrumb = () => {
           <React.Fragment key={item.path}>
             <BreadcrumbItem>
               {item.isActive ? (
-                <BreadcrumbPage>{item.name}</BreadcrumbPage>
+                <BreadcrumbPage className={"text-muted-foreground transition-colors duration-100 ease-in-out hover:text-foreground"}>{item.name}</BreadcrumbPage>
               ) : (
                 <BreadcrumbLink>
-                  <NavLink to={item.path}>{item.name}</NavLink>
+                  <NavLink to={item.path} className={"text-muted-foreground transition-colors duration-100 ease-in-out hover:text-foreground"}>{item.name}</NavLink>
                 </BreadcrumbLink>
               )}
             </BreadcrumbItem>
