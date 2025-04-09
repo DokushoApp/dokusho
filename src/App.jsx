@@ -1,13 +1,13 @@
 import React from "react";
 import {BrowserRouter, Routes, Route} from "react-router";
-import Library from './screens/Library.jsx';
-import Browse from "./screens/Browse.jsx";
-import History from "./screens/History.jsx";
-import Settings from "./screens/Settings.jsx";
-import Base from "@/components/library/Base.jsx";
-import Reader from "@/screens/Reader.jsx";
 import {Provider} from "jotai";
-import SettingsInitializer from "@/components/library/SettingsInitializer.jsx";
+import Library from '@/screens/Library.jsx';
+import Browse from "@/screens/Browse.jsx";
+import History from "@/screens/History.jsx";
+import Settings from "@/screens/Settings.jsx";
+import Reader from "@/screens/Reader.jsx";
+import Base from "@/components/base/Base.jsx";
+import SettingsInitializer from "@/components/base/SettingsInitializer.jsx";
 
 
 export function App() {
