@@ -1,6 +1,6 @@
 import {exists, readTextFile, writeTextFile} from "@tauri-apps/plugin-fs";
 import {BaseDirectory} from "@tauri-apps/api/path";
-import {atom} from "jotai";
+import {atom, useAtom} from "jotai";
 
 const fileExists = await exists("library.json", {
   baseDir: BaseDirectory.AppData,
@@ -25,11 +25,11 @@ const libraryFile = await readTextFile("library.json", {
 const library = JSON.parse(libraryFile);
 const libraryAtom = atom(library);
 
-const saveLibraryAtom = atom(null, async (get, set) => {
-  const library = get(libraryAtom)
-  await writeTextFile("library.json", JSON.stringify(library), {
+const loadLibraryAtom = atom(null, async (get, set) => {
+  const libraryData = await readTextFile("library.json", {
     baseDir: BaseDirectory.AppData,
   })
+  set(libraryAtom,JSON.parse(libraryData))
 })
 
-export {libraryAtom, saveLibraryAtom};
+export {libraryAtom, loadLibraryAtom};

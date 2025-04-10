@@ -1,37 +1,30 @@
 import React, {useState, useEffect} from 'react';
 import {useNavigate, useLocation} from 'react-router';
 import MangaReader from '@/components/reader/MangaReader.jsx';
-import {open} from '@tauri-apps/plugin-dialog';
 import {readDir} from '@tauri-apps/plugin-fs';
 import {convertFileSrc} from '@tauri-apps/api/core';
-import {BookOpen, FolderOpen} from 'lucide-react';
 
-const Reader = ({initialPath, onClose}) => {
+const Reader = () => {
+  const location = useLocation();
+  const mangaPath = location.state.mangaPath;
   const [pages, setPages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [mangaTitle, setMangaTitle] = useState('');
-  const [mangaPath, setMangaPath] = useState(initialPath || '');
 
   const navigate = useNavigate();
-  const location = useLocation();
 
   // Load manga from location state or initial path
   useEffect(() => {
-    const pathToLoad = initialPath || location.state?.mangaPath;
-    if (pathToLoad) {
-      setMangaPath(pathToLoad);
-      loadMangaFromPath(pathToLoad);
+    if (mangaPath) {
+      loadMangaFromPath(mangaPath)
     }
-  }, [initialPath, location.state]);
+    console.log(mangaPath);
+  }, []);
 
   // Handle close
   const handleClose = () => {
-    if (typeof onClose === 'function') {
-      onClose();
-    } else {
       navigate('/');
-    }
   };
 
   // Load manga from path
@@ -41,7 +34,7 @@ const Reader = ({initialPath, onClose}) => {
       setError(null);
 
       if (folderPath) {
-        // Extract folder name for manga title
+        console.log({folderPath});
         const folderName = folderPath.split('/').pop().split('\\').pop();
         setMangaTitle(folderName);
 
@@ -75,35 +68,11 @@ const Reader = ({initialPath, onClose}) => {
           src: convertFileSrc(`${folderPath}/${file.name}`),
           name: file.name
         }));
-
         setPages(loadedPages);
       }
     } catch (err) {
       console.error('Error loading manga:', err);
       setError('Failed to load manga: ' + err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Open manga folder dialog
-  const openMangaFolder = async () => {
-    try {
-      setIsLoading(true);
-
-      const selected = await open({
-        directory: true,
-        multiple: false,
-        title: 'Select Manga Folder'
-      });
-
-      if (selected) {
-        setMangaPath(selected);
-        await loadMangaFromPath(selected);
-      }
-    } catch (err) {
-      console.error('Error opening manga folder:', err);
-      setError('Failed to open folder: ' + err.message);
     } finally {
       setIsLoading(false);
     }
@@ -122,49 +91,9 @@ const Reader = ({initialPath, onClose}) => {
     );
   }
 
-  // Error state
-  if (error) {
-    return (
-      <div className="h-full w-full flex justify-center items-center bg-neutral-900 text-white">
-        <div className="text-center max-w-md mx-auto p-6">
-          <div className="text-red-500 mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24"
-                 stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-            </svg>
-          </div>
-          <h2 className="text-xl font-semibold mb-2">Error Loading Manga</h2>
-          <p className="text-neutral-300 mb-4">{error}</p>
-          <button
-            onClick={openMangaFolder}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   // Empty state - no manga loaded
   if (pages.length === 0) {
-    return (
-      <div className="h-full w-full flex justify-center items-center bg-neutral-900 text-white">
-        <div className="text-center">
-          <BookOpen className="h-16 w-16 mx-auto mb-4 text-neutral-500"/>
-          <h2 className="text-2xl font-semibold mb-4">Manga Reader</h2>
-          <p className="text-neutral-400 mb-6">Select a manga folder to start reading</p>
-          <button
-            onClick={openMangaFolder}
-            className="px-6 py-3 bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-2"
-          >
-            <FolderOpen className="h-5 w-5"/>
-            Open Manga Folder
-          </button>
-        </div>
-      </div>
-    );
+    navigate("/");
   }
 
   // Render the reader with loaded manga

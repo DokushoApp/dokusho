@@ -16,7 +16,11 @@
       "allow": [{ "path": "$APPDATA/*" }]
     },
     {
-      "identifier": "fs:allow-write-text-file",
+      "identifier": "fs:allow-app-read-recursive",
+      "allow": [{ "path": "$APPDATA/*" }]
+    },
+    {
+      "identifier": "fs:allow-app-write-recursive",
       "allow": [{ "path": "$APPDATA/*" }]
     }
   ]

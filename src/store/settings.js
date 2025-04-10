@@ -21,9 +21,8 @@ export const defaultSettings = {
   ],
   default_category: "plan-to-read",
   reading_mode:"left-to-right",
-  reading_page_layout:"continuous",
-  reader_zoom:100,
-  reader_padding:10,
+  reading_page_layout:"one-page",
+  reader_zoom:1.0,
   extension_repo: "",
   show_nsfw: false,
 };

@@ -1,17 +1,21 @@
-import React, {useEffect, useState} from "react";
-import {useNavigate} from "react-router";
-import {Origami, Plus} from "lucide-react";
-import {nanoid} from "nanoid";
-import {open} from '@tauri-apps/plugin-dialog';
-import {readDir} from '@tauri-apps/plugin-fs';
-import {convertFileSrc, invoke} from '@tauri-apps/api/core';
-import {useAtom, useAtomValue} from "jotai";
-import {focusAtom} from "jotai-optics";
+import React, { useState } from "react";
+import { useNavigate } from "react-router";
+import { Origami, Plus, FolderUp, Archive, X } from "lucide-react";
+import { open } from '@tauri-apps/plugin-dialog';
+import { invoke } from '@tauri-apps/api/core';
+import { useAtom } from "jotai";
+import { focusAtom } from "jotai-optics";
 
-import {settingsAtom, saveSettingsAtom} from "@/store/settings";
-import {libraryAtom, saveLibraryAtom} from "@/store/library.js";
+import { settingsAtom, saveSettingsAtom } from "@/store/settings";
+import { libraryAtom, loadLibraryAtom } from "@/store/library.js";
 
-import {Button} from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import DraggableMenuBar from "@/components/library/DraggableMenuBar";
 import MangaCard from "@/components/library/MangaCard.jsx";
 
@@ -23,67 +27,33 @@ const mangaAtom = focusAtom(libraryAtom, optic => optic.prop("manga"));
 function Library() {
   const [mangaList, setMangaList] = useAtom(mangaAtom);
   const [isLoading, setIsLoading] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Get categories from settings
   const [categories, setCategories] = useAtom(categoriesAtom);
   const [defaultCategory] = useAtom(defaultCategoryAtom);
   const [, saveSettings] = useAtom(saveSettingsAtom);
-  const [, saveLibrary] = useAtom(saveLibraryAtom);
-
-  useEffect( () => {
-    saveLibrary();
-  }, [mangaList]);
+  const [, loadLibrary] = useAtom(loadLibraryAtom);
 
   // Use the default category from settings as the initial active category
   const [selectedCategory, setSelectedCategory] = useState(defaultCategory);
 
   const navigate = useNavigate();
 
-  const handleAddManga = async () => {
+  const handleAddMangaFolder = async () => {
     try {
       setIsLoading(true);
+      setIsMenuOpen(false); // Close the menu
 
       const selected = await open({
         directory: true,
         multiple: false,
-        title: 'Select Source'
+        title: 'Select Manga Folder'
       });
 
       if (selected) {
         const folderPath = selected.toString();
         const folderName = folderPath.split('/').pop().split('\\').pop();
-
-        // Try to find a cover image in the folder
-        const entries = await readDir(folderPath);
-
-        // Filter for image files
-        const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp'];
-        const imageFiles = entries
-          .filter(entry => {
-            const lowerCaseName = entry.name?.toLowerCase() || '';
-            return entry.children === undefined &&
-              imageExtensions.some(ext => lowerCaseName.endsWith(ext));
-          })
-          .sort((a, b) => {
-            // Sort images to try to get cover image first
-            const aName = a.name?.toLowerCase() || '';
-            const bName = b.name?.toLowerCase() || '';
-
-            // Prioritize files that might be covers
-            const coverKeywords = ['cover', 'front', 'page0', 'page1', 'page01', '001', '0001'];
-            const aIsCover = coverKeywords.some(keyword => aName.includes(keyword));
-            const bIsCover = coverKeywords.some(keyword => bName.includes(keyword));
-
-            if (aIsCover && !bIsCover) return -1;
-            if (!aIsCover && bIsCover) return 1;
-
-            return 0;
-          });
-
-        const coverImage = imageFiles.length > 0
-          ? convertFileSrc(folderPath + "/" + imageFiles[0].name)
-          : 'https://placehold.co/200x300/png?text=No+Cover';
-
 
         // Create a new manga entry
         const mangaInput = {
@@ -92,24 +62,58 @@ function Library() {
           category: selectedCategory,
         };
 
-        await invoke("import_manga_folder", {mangaInput})
-
-        // setMangaList([...mangaList, newManga]);
+        await invoke("import_manga_folder", { mangaInput })
+        await loadLibrary();
       }
       setIsLoading(false);
     } catch (err) {
-      console.error('Error adding manga:', err);
+      console.error('Error adding manga folder:', err);
       setIsLoading(false);
     }
   };
 
-  const handleCategorySelect = (categoryId) => {
-    setSelectedCategory(categoryId);
+  const handleAddMangaCBZ = async () => {
+    try {
+      setIsLoading(true);
+      setIsMenuOpen(false); // Close the menu
+
+      const selected = await open({
+        multiple: false,
+        filters: [{
+          name: 'Comic Book Archive',
+          extensions: ['cbz']
+        }],
+        title: 'Select Manga CBZ File'
+      });
+
+      if (selected) {
+        const filePath = selected.toString();
+        const fileName = filePath.split('/').pop().split('\\').pop();
+        const title = fileName.replace(/\.cbz$/i, '');
+
+        // Create a new manga entry
+        const mangaInput = {
+          title: title,
+          path: filePath,
+          category: selectedCategory,
+        };
+
+        await invoke("import_manga_cbz", { mangaInput })
+        await loadLibrary();
+      }
+      setIsLoading(false);
+    } catch (err) {
+      console.error('Error adding manga CBZ:', err);
+      setIsLoading(false);
+    }
   };
 
-  const handleMangaSelect = (manga) => {
-    // Navigate to the reader with the manga path
-    navigate('/reader', {state: {mangaPath: manga.path}});
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
+  const handleCategorySelect = (categoryId) => {
+    setSelectedCategory(categoryId);
   };
 
   // Handle categories reordering
@@ -141,7 +145,6 @@ function Library() {
             <MangaCard
               key={manga.id}
               manga={manga}
-              onClick={handleMangaSelect}
             />
           ))}
         </div>
@@ -154,14 +157,56 @@ function Library() {
         </div>
       )}
 
-      {/* Floating action button to add manga */}
-      <Button
-        onClick={handleAddManga}
-        className="fixed bottom-6 right-6 rounded-full h-14 w-14 shadow-lg"
-        disabled={isLoading}
-      >
-        <Plus className="!h-6 !w-6"/>
-      </Button>
+      {/* Floating action button menu with tooltips */}
+      <TooltipProvider>
+        <div className="fixed bottom-6 right-6 flex flex-col-reverse items-center gap-4 z-50">
+          {/* Main toggle button */}
+          <Button
+            onClick={toggleMenu}
+            size="icon"
+            variant="outline"
+            className="rounded-full h-14 w-14 shadow-lg transition-all duration-300"
+            disabled={isLoading}
+          >
+            {isMenuOpen ? (
+              <X className="h-6 w-6 transition-transform duration-300" />
+            ) : (
+              <Plus className="h-6 w-6 transition-transform duration-300" />
+            )}
+          </Button>
+
+          {/* Animated sub-buttons that appear when menu is open */}
+          <div className={`flex flex-col gap-3 items-center ${isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'} transition-all duration-300`}>
+            {/* Folder import button */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={handleAddMangaFolder}
+                  size="icon"
+                  variant="outline"
+                  className={`rounded-full h-12 w-12 shadow-md ${isMenuOpen ? 'transform translate-y-0' : 'transform translate-y-10'} transition-all duration-300`}
+                >
+                  <FolderUp className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+            </Tooltip>
+
+            {/* CBZ import button */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={handleAddMangaCBZ}
+                  size="icon"
+                  variant="outline"
+                  className={`rounded-full h-12 w-12 shadow-md ${isMenuOpen ? 'transform translate-y-0' : 'transform translate-y-10'} transition-all duration-300 delay-75`}
+                >
+                  <Archive className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+            </Tooltip>
+          </div>
+        </div>
+      </TooltipProvider>
     </div>
   );
 }
