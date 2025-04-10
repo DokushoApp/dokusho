@@ -11,7 +11,7 @@ export const readerSettingsAtom = atom({
   autoHideControls: true
 });
 
-const MinimalReader = ({
+const MangaReader = ({
                          pages = [],
                          onClose,
                          initialPage = 0,
@@ -258,7 +258,7 @@ const MinimalReader = ({
 
   return (
     <div
-      className="h-full w-full relative bg-neutral-900 text-white"
+      className="h-full w-full relative"
       ref={containerRef}
     >
       {/* Reader Content */}
@@ -611,4 +611,4 @@ const MinimalReader = ({
   );
 };
 
-export default MinimalReader;
+export default MangaReader;
