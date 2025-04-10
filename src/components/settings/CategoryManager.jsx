@@ -62,7 +62,7 @@ const SortableItem = ({ category, onDelete, onEdit }) => {
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center justify-between p-2 my-1 bg-background border rounded-md group"
+      className="flex items-center justify-between p-1 my-1 bg-background border rounded-md group"
     >
       <div className="flex items-center flex-1">
         <button
@@ -70,7 +70,7 @@ const SortableItem = ({ category, onDelete, onEdit }) => {
           {...attributes}
           {...listeners}
         >
-          <GripVertical size={16} />
+          <GripVertical size={12} />
         </button>
 
         {isEditing ? (
@@ -207,7 +207,7 @@ const CategoryManager = ({ open, onClose }) => {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="py-4">
+        <div className="py-2">
           <div className="flex items-center space-x-2 mb-4">
             <Input
               placeholder="New category name"
@@ -244,12 +244,6 @@ const CategoryManager = ({ open, onClose }) => {
             </DndContext>
           </ScrollArea>
         </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Close
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
