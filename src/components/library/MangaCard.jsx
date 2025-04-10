@@ -1,31 +1,40 @@
 import React from 'react';
-import { MoreVertical } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import {MoreVertical} from 'lucide-react';
+import {Button} from '@/components/ui/button';
+import {convertFileSrc} from "@tauri-apps/api/core";
+import {useNavigate} from "react-router";
 
-const MangaCard = ({ manga, onClick }) => {
+const MangaCard = ({manga}) => {
+  const navigate = useNavigate();
+  const handleClick = (manga) => {
+    // Navigate to the reader with the manga path
+    navigate('/reader', {state: {mangaPath: manga.path}});
+  };
+  console.log(manga);
   return (
     <div
       className="group relative rounded-md shadow-sm overflow-hidden transition-all hover:shadow-md bg-white dark:bg-neutral-800 cursor-pointer"
-      style={{ width: '200px' }}
-      onClick={() => onClick && onClick(manga)}
-    >
+      style={{width: '200px'}}
+      onClick={() => {
+        handleClick(manga)
+      }}>
       {/* Cover Image */}
-      <div className="relative overflow-hidden" style={{ height: '200px' }}>
+      <div className="relative overflow-hidden" style={{height: '200px'}}>
         <img
-          src={manga.coverImage}
+          src={convertFileSrc(manga.cover)}
           alt={manga.title}
           className="w-full h-full object-cover transition-transform group-hover:scale-105"
         />
 
         {/* Hover overlay effect */}
-        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity"/>
 
         {/* Reading progress indicator */}
         {manga.progress > 0 && (
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200 dark:bg-neutral-600">
             <div
               className="h-1 bg-primary"
-              style={{ width: `${manga.progress}%` }}
+              style={{width: `${manga.progress}%`}}
             />
           </div>
         )}
@@ -44,7 +53,7 @@ const MangaCard = ({ manga, onClick }) => {
               // Add your menu logic here
             }}
           >
-            <MoreVertical className="h-3 w-3" />
+            <MoreVertical className="h-3 w-3"/>
           </Button>
         </div>
 
