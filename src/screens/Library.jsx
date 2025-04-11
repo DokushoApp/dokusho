@@ -26,7 +26,6 @@ const mangaAtom = focusAtom(libraryAtom, optic => optic.prop("manga"));
 
 function Library() {
   const [mangaList, setMangaList] = useAtom(mangaAtom);
-  const [isLoading, setIsLoading] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Get categories from settings
@@ -42,7 +41,6 @@ function Library() {
 
   const handleAddMangaFolder = async () => {
     try {
-      setIsLoading(true);
       setIsMenuOpen(false); // Close the menu
 
       const selected = await open({
@@ -65,16 +63,13 @@ function Library() {
         await invoke("import_manga_folder", { mangaInput })
         await loadLibrary();
       }
-      setIsLoading(false);
     } catch (err) {
       console.error('Error adding manga folder:', err);
-      setIsLoading(false);
     }
   };
 
   const handleAddMangaCBZ = async () => {
     try {
-      setIsLoading(true);
       setIsMenuOpen(false); // Close the menu
 
       const selected = await open({
@@ -101,10 +96,8 @@ function Library() {
         await invoke("import_manga_cbz", { mangaInput })
         await loadLibrary();
       }
-      setIsLoading(false);
     } catch (err) {
       console.error('Error adding manga CBZ:', err);
-      setIsLoading(false);
     }
   };
 
@@ -166,7 +159,6 @@ function Library() {
             size="icon"
             variant="outline"
             className="rounded-full h-14 w-14 shadow-lg transition-all duration-300"
-            disabled={isLoading}
           >
             {isMenuOpen ? (
               <X className="h-6 w-6 transition-transform duration-300" />

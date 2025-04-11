@@ -1,7 +1,7 @@
 import {X} from "lucide-react";
 import React from "react";
 
-const HelpOverlay = ({readingMode, isWebtoonMode, handleClose}) => {
+const HelpOverlay = ({readingMode, handleClose}) => {
   return (
     <div className="fixed inset-0 bg-background/70 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
       <button
@@ -13,7 +13,7 @@ const HelpOverlay = ({readingMode, isWebtoonMode, handleClose}) => {
 
       <h2 className="text-foreground text-2xl font-bold mb-8">Reader Controls</h2>
 
-      {isWebtoonMode ? (
+      {readingMode === "webtoon" ? (
         // Webtoon mode controls
         <div className="w-full max-w-md px-4">
           <div className="relative h-80 border-2 border-border rounded-lg overflow-hidden">

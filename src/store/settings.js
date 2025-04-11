@@ -1,8 +1,6 @@
 import { atom } from 'jotai';
-import { invoke } from '@tauri-apps/api/core';
 import {BaseDirectory} from "@tauri-apps/api/path";
-import {exists, readFile, readTextFile, stat, writeTextFile} from "@tauri-apps/plugin-fs";
-import {save} from "@tauri-apps/plugin-dialog";
+import {exists, readTextFile, writeTextFile} from "@tauri-apps/plugin-fs";
 
 
 // Default settings values
@@ -27,63 +25,47 @@ export const defaultSettings = {
   show_nsfw: false,
 };
 
-// Create a single settings atom
-const fileExists = await exists("settings.json", {
-  baseDir: BaseDirectory.AppData,
-});
+const settingsAtom = atom(defaultSettings);
 
-if(!fileExists) {
-  await writeTextFile("settings.json", JSON.stringify(defaultSettings),{
+const initializeSettingsAtom = atom(null, async(get, set)=>{
+  const fileExists = await exists("settings.json", {
     baseDir: BaseDirectory.AppData,
   });
-}
-const file = await readTextFile("settings.json", {
-  baseDir: BaseDirectory.AppData,
+
+  if(!fileExists) {
+    await writeTextFile("settings.json", JSON.stringify(defaultSettings),{
+      baseDir: BaseDirectory.AppData,
+    });
+    set(settingsAtom, defaultSettings);
+  }else{
+    const file = await readTextFile("settings.json", {
+      baseDir: BaseDirectory.AppData,
+    })
+
+    const settings = JSON.parse(file);
+    set(settingsAtom, settings);
+  }
 })
 
-const settings = JSON.parse(file);
-export const settingsAtom = atom(settings);
-
-// Loading state atom
-export const isLoadingAtom = atom(true);
-export const errorAtom = atom(null);
-
-export const loadSettingsAtom = atom(
+const loadSettingsAtom = atom(
   null,
   async (get, set) => {
     try {
-      set(isLoadingAtom, true);
-      set(errorAtom, null);
-
-      const fileExists = await exists("settings.json", {
-        baseDir: BaseDirectory.AppData,
-      });
-
-      if(!fileExists) {
-        await writeTextFile("settings.json", JSON.stringify(defaultSettings),{
-          baseDir: BaseDirectory.AppData,
-        });
-      }
       const file = await readTextFile("settings.json", {
         baseDir: BaseDirectory.AppData,
       })
 
       const settings = JSON.parse(file);
       set(settingsAtom, settings);
-
-      return settings;
     } catch (error) {
       console.error('Failed to load settings:', error);
-      set(errorAtom, error.toString());
       return null;
-    } finally {
-      set(isLoadingAtom, false);
     }
   }
 );
 
 // Atom to save settings to storage
-export const saveSettingsAtom = atom(
+const saveSettingsAtom = atom(
   null,
   async (get, set) => {
     try {
@@ -91,18 +73,16 @@ export const saveSettingsAtom = atom(
       await writeTextFile("settings.json", JSON.stringify(settings),{
         baseDir: BaseDirectory.AppData,
       });
-      console.log(true)
       return true;
     } catch (error) {
       console.error('Failed to save settings:', error);
-      set(errorAtom, error.toString());
       return false;
     }
   }
 );
 
 // Function to reset all settings to defaults
-export const resetSettingsAtom = atom(
+const resetSettingsAtom = atom(
   null,
   async (get, set) => {
     try {
@@ -114,8 +94,9 @@ export const resetSettingsAtom = atom(
       return true;
     } catch (error) {
       console.error('Failed to reset settings:', error);
-      set(errorAtom, error.toString());
       return false;
     }
   }
 );
+
+export {settingsAtom, initializeSettingsAtom, loadSettingsAtom,saveSettingsAtom, resetSettingsAtom};
