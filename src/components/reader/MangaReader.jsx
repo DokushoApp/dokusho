@@ -343,7 +343,7 @@ const MangaReader = ({
 
       {/* Help Overlay */}
       {showHelp && (
-        <HelpOverlay handleClose={()=>setShowHelp(false)} readingMode={readingMode} isWebtoonMode={isWebtoonMode} />
+        <HelpOverlay handleClose={()=>setShowHelp(false)} readingMode={readingMode} />
       )}
     </div>
   );
