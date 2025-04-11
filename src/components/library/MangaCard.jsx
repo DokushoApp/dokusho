@@ -7,10 +7,8 @@ import {useNavigate} from "react-router";
 const MangaCard = ({manga}) => {
   const navigate = useNavigate();
   const handleClick = (manga) => {
-    // Navigate to the reader with the manga path
     navigate('/reader', {state: {manga}});
   };
-  console.log(manga);
   return (
     <div
       className="group relative rounded-md shadow-sm overflow-hidden transition-all hover:shadow-md bg-white dark:bg-neutral-800 cursor-pointer"

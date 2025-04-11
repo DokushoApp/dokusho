@@ -6,22 +6,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { useAtom } from "jotai";
-import { focusAtom } from "jotai-optics";
-import { settingsAtom, saveSettingsAtom } from "@/store/settings";
-import ThemeSelector from "@/components/settings/ThemeSelector.jsx";
+import {Label} from "@/components/ui/label";
+import {useAtom, useAtomValue} from "jotai";
+import {focusAtom} from "jotai-optics";
+import {settingsAtom, saveSettingsAtom} from "@/store/settings";
 
 // Settings Jotai Atoms for General tab
 const defaultCategoryTabAtom = focusAtom(settingsAtom, optic => optic.prop("default_category_tab"));
 const mangaCardSizeAtom = focusAtom(settingsAtom, optic => optic.prop("manga_card_size"));
 const categoriesAtom = focusAtom(settingsAtom, optic => optic.prop("categories"));
+const themeAtom = focusAtom(settingsAtom, optic => optic.prop("theme"))
 
 const GeneralSettings = () => {
   // Get individual atoms for settings
   const [defaultCategoryTab, setDefaultCategoryTab] = useAtom(defaultCategoryTabAtom);
   const [mangaCardSize, setMangaCardSize] = useAtom(mangaCardSizeAtom);
-  const [categories] = useAtom(categoriesAtom); // Read-only for now
+  const categories = useAtomValue(categoriesAtom);
+  const [theme, setTheme] = useAtom(themeAtom);
   const [, saveSettings] = useAtom(saveSettingsAtom);
 
   // Auto-save handler for form elements
@@ -37,7 +38,24 @@ const GeneralSettings = () => {
       </p>
 
       {/* Theme - Using the dedicated component */}
-      <ThemeSelector />
+      <div className="flex items-center">
+        <Label htmlFor="theme" className="w-48">Theme</Label>
+        <div className="w-64">
+          <Select
+            value={theme}
+            onValueChange={(value) => handleValueChange(setTheme, value)}
+          >
+            <SelectTrigger id="theme">
+              <SelectValue placeholder="Select theme"/>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="light">Light</SelectItem>
+              <SelectItem value="dark">Dark</SelectItem>
+              <SelectItem value="system">System</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
       {/* Default Category Tab */}
       <div className="flex items-center">
@@ -48,7 +66,7 @@ const GeneralSettings = () => {
             onValueChange={(value) => handleValueChange(setDefaultCategoryTab, value)}
           >
             <SelectTrigger id="defaultCategoryTab">
-              <SelectValue placeholder="Select default category tab" />
+              <SelectValue placeholder="Select default category tab"/>
             </SelectTrigger>
             <SelectContent>
               {categories.map((category) => (
@@ -71,7 +89,7 @@ const GeneralSettings = () => {
             className="w-64"
           >
             <SelectTrigger id="cardSize">
-              <SelectValue placeholder="Select card size" />
+              <SelectValue placeholder="Select card size"/>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="small">Small</SelectItem>
