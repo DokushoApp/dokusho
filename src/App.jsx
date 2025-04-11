@@ -7,13 +7,11 @@ import History from "@/screens/History.jsx";
 import Settings from "@/screens/Settings.jsx";
 import Reader from "@/screens/Reader.jsx";
 import Base from "@/components/base/Base.jsx";
-import SettingsInitializer from "@/components/base/SettingsInitializer.jsx";
 
 
 export function App() {
   return (
     <Provider>
-      <SettingsInitializer/>
       <BrowserRouter>
         <Routes>
           <Route element={<Base/>}>

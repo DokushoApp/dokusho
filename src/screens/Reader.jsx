@@ -8,7 +8,6 @@ const Reader = () => {
   const location = useLocation();
   const mangaPath = location.state.mangaPath;
   const [pages, setPages] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [mangaTitle, setMangaTitle] = useState('');
 
@@ -30,7 +29,6 @@ const Reader = () => {
   // Load manga from path
   const loadMangaFromPath = async (folderPath) => {
     try {
-      setIsLoading(true);
       setError(null);
 
       if (folderPath) {
@@ -73,23 +71,8 @@ const Reader = () => {
     } catch (err) {
       console.error('Error loading manga:', err);
       setError('Failed to load manga: ' + err.message);
-    } finally {
-      setIsLoading(false);
     }
   };
-
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="h-full w-full flex justify-center items-center bg-neutral-900 text-white">
-        <div className="text-center">
-          <div
-            className="w-12 h-12 border-4 border-t-blue-500 border-blue-200 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-xl">Loading manga...</p>
-        </div>
-      </div>
-    );
-  }
 
   // Empty state - no manga loaded
   if (pages.length === 0) {

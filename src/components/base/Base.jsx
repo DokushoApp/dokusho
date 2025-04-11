@@ -1,15 +1,24 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import {Outlet} from 'react-router';
 import {AppSidebar} from './AppSidebar.jsx';
 import {cn} from "@/lib/utils.js";
-import {SidebarInset, SidebarProvider, SidebarTrigger} from "@/components/ui/sidebar.jsx";
+import {SidebarInset, SidebarProvider} from "@/components/ui/sidebar.jsx";
 import AppBar from "@/components/base/AppBar.jsx";
+import {useAtom} from "jotai";
+import {initializeLibraryAtom} from "@/store/library.js";
+import {initializeSettingsAtom} from "@/store/settings.js";
 
 
 const Base = () => {
+  const [, initializeLibrary] = useAtom(initializeLibraryAtom)
+  const [, initializeSettings] = useAtom(initializeSettingsAtom)
+  useEffect( () => {
+    initializeLibrary();
+    initializeSettings();
+  },[])
   return (
     <div className={cn(
-      "flex w-full flex-1 flex-col overflow-hidden bg-gray-100 md:flex-row  dark:bg-neutral-800",
+      "flex w-full flex-1 flex-col overflow-hidden md:flex-row",
       "h-screen"
     )}>
       <SidebarProvider

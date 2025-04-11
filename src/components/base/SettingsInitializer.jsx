@@ -1,12 +1,11 @@
 import { useEffect, useCallback } from 'react';
 import { useAtom } from 'jotai';
-import { settingsAtom, isLoadingAtom, saveSettingsAtom, loadSettingsAtom } from '@/store/settings.js';
+import { settingsAtom, saveSettingsAtom, loadSettingsAtom } from '@/store/settings.js';
 
 const SettingsInitializer = () => {
   const [, saveSettings] = useAtom(saveSettingsAtom);
   const [, loadSettings] = useAtom(loadSettingsAtom);
   const [settings] = useAtom(settingsAtom);
-  const [isLoading] = useAtom(isLoadingAtom);
 
   // Load settings on mount
   useEffect(() => {
@@ -31,10 +30,10 @@ const SettingsInitializer = () => {
 
   // Apply theme when settings change
   useEffect(() => {
-    if (!isLoading && settings) {
+    if (settings) {
       applyTheme(settings.theme);
     }
-  }, [settings, isLoading, applyTheme]);
+  }, [settings, applyTheme]);
 
   // Listen for system theme changes
   useEffect(() => {
