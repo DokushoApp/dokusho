@@ -8,7 +8,7 @@ const MangaCard = ({manga}) => {
   const navigate = useNavigate();
   const handleClick = (manga) => {
     // Navigate to the reader with the manga path
-    navigate('/reader', {state: {mangaPath: manga.path}});
+    navigate('/reader', {state: {manga}});
   };
   console.log(manga);
   return (
