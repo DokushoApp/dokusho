@@ -1,43 +1,27 @@
-import React, {useState, useEffect} from 'react';
-import {useNavigate, useLocation} from 'react-router';
+import React, { useState, useEffect } from 'react';
+import {useLocation, useNavigate} from 'react-router';
 import MangaReader from '@/components/reader/MangaReader.jsx';
-import {readDir} from '@tauri-apps/plugin-fs';
-import {convertFileSrc} from '@tauri-apps/api/core';
+import { readDir } from '@tauri-apps/plugin-fs';
+import { convertFileSrc } from '@tauri-apps/api/core';
 
 const Reader = () => {
   const location = useLocation();
-  const mangaPath = location.state.mangaPath;
+  const navigate = useNavigate();
+  const manga = location.state.manga;
   const [pages, setPages] = useState([]);
-  const [error, setError] = useState(null);
   const [mangaTitle, setMangaTitle] = useState('');
 
-  const navigate = useNavigate();
-
-  // Load manga from location state or initial path
+  // Load manga pages when component mounts or manga changes
   useEffect(() => {
-    if (mangaPath) {
-      loadMangaFromPath(mangaPath)
-    }
-    console.log(mangaPath);
-  }, []);
+    const loadMangaPages = async () => {
+      try {
+        const mangaPath = manga.path;
 
-  // Handle close
-  const handleClose = () => {
-      navigate('/');
-  };
-
-  // Load manga from path
-  const loadMangaFromPath = async (folderPath) => {
-    try {
-      setError(null);
-
-      if (folderPath) {
-        console.log({folderPath});
-        const folderName = folderPath.split('/').pop().split('\\').pop();
-        setMangaTitle(folderName);
+        // Set manga title from manga object
+        setMangaTitle(manga.title || '');
 
         // Read all files in the directory
-        const entries = await readDir(folderPath);
+        const entries = await readDir(mangaPath);
 
         // Filter for image files only
         const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp'];
@@ -63,20 +47,31 @@ const Reader = () => {
         // Create page objects
         const loadedPages = imageFiles.map((file, index) => ({
           id: index,
-          src: convertFileSrc(`${folderPath}/${file.name}`),
+          src: convertFileSrc(`${mangaPath}/${file.name}`),
           name: file.name
         }));
+
         setPages(loadedPages);
+      } catch (err) {
+        navigate('/');
       }
-    } catch (err) {
-      console.error('Error loading manga:', err);
-      setError('Failed to load manga: ' + err.message);
-    }
+    };
+
+    loadMangaPages();
+  }, [manga]);
+
+  // Handle back navigation
+  const handleClose = () => {
+    navigate('/');
   };
 
-  // Empty state - no manga loaded
-  if (pages.length === 0) {
-    navigate("/");
+  // Simple loading indicator while pages are loading
+  if (!manga || pages.length === 0) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
   }
 
   // Render the reader with loaded manga
@@ -89,7 +84,7 @@ const Reader = () => {
         chapterTitle={mangaTitle}
       />
     </div>
-  )
+  );
 };
 
 export default Reader;

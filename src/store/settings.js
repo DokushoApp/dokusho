@@ -10,8 +10,7 @@ export const defaultSettings = {
   default_category_tab: "reading",
   manga_card_size: "medium",
   categories:[
-    {id: "all", name: "All"},
-    {id: "plan-to-read", name: "Plan to Read"},
+    {id: "picked-up", name: "Picked Up"},
     {id: "reading", name: "Reading"},
     {id: "on-hold", name: "On Hold"},
     {id: "completed", name: "Completed"},
