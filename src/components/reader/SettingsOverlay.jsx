@@ -2,7 +2,7 @@ import React from "react";
 import {useAtom} from "jotai";
 import {focusAtom} from "jotai-optics";
 import {RotateCcw, X, Minus, Plus} from 'lucide-react';
-import {settingsAtom} from "@/store/settings.js";
+import {saveSettingsAtom, settingsAtom} from "@/store/settings.js";
 import {cn} from "@/lib/utils.js";
 import {Button} from "@/components/ui/button.jsx";
 
@@ -15,7 +15,12 @@ const SettingsOverlay = ({handleClose}) => {
   const [readingMode, setReadingMode] = useAtom(readingModeAtom);
   const [readerPageLayout, setReaderPageLayout] = useAtom(readerPageLayoutAtom);
   const [readerZoom, setReaderZoom] = useAtom(readerZoomAtom);
+  const [, saveSettings] = useAtom(saveSettingsAtom);
 
+  const handleValueChange = (setter, value) => {
+    setter(value);
+    setTimeout(() => saveSettings(), 0);
+  };
 
   return (
     <div className="fixed top-20 right-6 bg-card rounded-lg shadow-lg z-50 w-72 overflow-hidden border border-border">
@@ -46,7 +51,7 @@ const SettingsOverlay = ({handleClose}) => {
               Left to Right
             </button>
             <button
-              onClick={() => setReadingMode('right-to-left')}
+              onClick={() => handleValueChange(setReadingMode, 'right-to-left')}
               className={cn(
                 "px-2 py-1.5 text-xs rounded",
                 readingMode === 'right-to-left'
@@ -57,7 +62,7 @@ const SettingsOverlay = ({handleClose}) => {
               Right to Left
             </button>
             <button
-              onClick={() => setReadingMode('webtoon')}
+              onClick={() => handleValueChange(setReadingMode, 'webtoon')}
               className={cn(
                 "px-2 py-1.5 text-xs rounded",
                 readingMode === 'webtoon'
@@ -76,7 +81,7 @@ const SettingsOverlay = ({handleClose}) => {
             <label className="block text-sm text-muted-foreground">Page Layout</label>
             <div className="grid grid-cols-2 gap-1">
               <button
-                onClick={() => setReaderPageLayout('single')}
+                onClick={() => handleValueChange(setReaderPageLayout, 'single')}
                 className={cn(
                   "px-2 py-1.5 text-xs rounded flex items-center justify-center gap-1",
                   readerPageLayout === 'single'
@@ -87,7 +92,7 @@ const SettingsOverlay = ({handleClose}) => {
                 Single Page
               </button>
               <button
-                onClick={() => setReaderPageLayout('double')}
+                onClick={() => handleValueChange(setReaderPageLayout, 'double')}
                 className={cn(
                   "px-2 py-1.5 text-xs rounded flex items-center justify-center gap-1",
                   readerPageLayout === 'double'
@@ -110,11 +115,11 @@ const SettingsOverlay = ({handleClose}) => {
                 </span></label>
           <div className="flex items-center space-x-2">
             <Button
-              onClick={() => setReaderZoom(Math.max(readerZoom - 0.1, 0.5))}
+              onClick={() => handleValueChange(setReaderZoom, Math.max(readerZoom - 0.1, 0.5))}
               size={"icon"}
               variant="outline"
             >
-              <Minus />
+              <Minus/>
             </Button>
             <div className="flex-1 bg-muted rounded-md h-1 relative">
               <div
@@ -123,18 +128,18 @@ const SettingsOverlay = ({handleClose}) => {
               />
             </div>
             <Button
-              onClick={() => setReaderZoom(Math.min(readerZoom + 0.1, 2))}
+              onClick={() => handleValueChange(setReaderZoom, Math.min(readerZoom + 0.1, 2))}
               size={"icon"}
               variant="outline"
             >
               <Plus/>
             </Button>
             <Button
-              onClick={() => setReaderZoom(1.0)}
+              onClick={() => handleValueChange(setReaderZoom, 1.0)}
               size={"icon"}
               variant="outline"
             >
-              <RotateCcw />
+              <RotateCcw/>
             </Button>
           </div>
 
