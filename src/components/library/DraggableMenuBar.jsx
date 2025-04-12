@@ -243,7 +243,7 @@ const DraggableMenuBar = ({
   return (
     <div>
       <div className="flex items-center justify-between py-2 relative">
-        <ScrollArea className="w-full" orientation="horizontal" ref={scrollContainerRef}>
+        <div className="w-full overflow-x-auto no-scrollbar" ref={scrollContainerRef}>
           <div className="flex items-center gap-5 min-w-max relative" ref={containerRef}>
             <DndContext
               sensors={sensors}
@@ -290,8 +290,7 @@ const DraggableMenuBar = ({
               }}
             />
           </div>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+        </div>
       </div>
 
       {/* Add Item Dialog */}
