@@ -88,7 +88,7 @@ const MangaReader = ({
       }
 
       // Close reader with Escape key
-      if (e.key === 'Escape' && !showSettings && !showHelp) {
+      if (e.key === 'Escape' && !showHelp) {
         handleReaderClose();
       }
     };
