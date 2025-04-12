@@ -128,9 +128,9 @@ function Library() {
         addItemTitle="Add New Category"
         addItemPlaceholder="Enter category name"
       />
-      <ScrollArea className={"flex-1 overflow-auto"}>
+      <div className={"flex-1 overflow-y-auto no-scrollbar"}>
         {filteredManga.length > 0 ? (
-          <div>
+          <div className="flex flex-wrap gap-3">
             {filteredManga.map((manga) => (
               <MangaCard
                 key={manga.id}
@@ -146,7 +146,7 @@ function Library() {
             </div>
           </div>
         )}
-      </ScrollArea>
+      </div>
 
       {/* Floating action button menu with tooltips */}
       <TooltipProvider>
