@@ -18,13 +18,12 @@ import {
 } from "@dnd-kit/sortable";
 import {restrictToHorizontalAxis} from "@dnd-kit/modifiers";
 import {arrayMove} from "@dnd-kit/sortable";
-import {Plus, Settings} from "lucide-react";
-import {ScrollArea} from "@/components/ui/scroll-area";
+import {Plus} from "lucide-react";
+import {ScrollArea, ScrollBar} from "@/components/ui/scroll-area";
 
 // Sortable menu item component
-const SortableMenuItem = ({item, isActive, onClick, activeItemRef}) => {
+const SortableMenuItem = ({item, isActive, onClick, onActive}) => {
   const itemRef = useRef(null);
-  const textRef = useRef(null);
 
   const {
     attributes,
@@ -35,14 +34,12 @@ const SortableMenuItem = ({item, isActive, onClick, activeItemRef}) => {
     isDragging,
   } = useSortable({id: item.id});
 
+  // Notify parent component when this item becomes active
   useEffect(() => {
-    // If this item is active, update the reference for the indicator animation
-    if (isActive && textRef.current && activeItemRef.current) {
-      const rect = textRef.current.getBoundingClientRect();
-      activeItemRef.current.style.width = `${rect.width}px`;
-      activeItemRef.current.style.transform = `translateX(${rect.left - activeItemRef.current.parentElement.getBoundingClientRect().left}px)`;
+    if (isActive && itemRef.current) {
+      onActive(itemRef.current);
     }
-  }, [isActive, activeItemRef, transform]);
+  }, [isActive, transform, onActive]);
 
   const style = {
     transform: transform ? `translate3d(${transform.x}px, 0, 0)` : undefined,
@@ -52,7 +49,6 @@ const SortableMenuItem = ({item, isActive, onClick, activeItemRef}) => {
   return (
     <div
       ref={(node) => {
-        // Set both the sortable ref and our local ref
         setNodeRef(node);
         itemRef.current = node;
       }}
@@ -70,7 +66,7 @@ const SortableMenuItem = ({item, isActive, onClick, activeItemRef}) => {
           }
         }}
       >
-        <span ref={textRef}>{item.name}</span>
+        <span>{item.name}</span>
       </div>
     </div>
   );
@@ -89,7 +85,10 @@ const DraggableMenuBar = ({
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newItemName, setNewItemName] = useState("");
   const [isDragging, setIsDragging] = useState(false);
-  const activeIndicatorRef = useRef(null);
+
+  const scrollContainerRef = useRef(null);
+  const indicatorRef = useRef(null);
+  const containerRef = useRef(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -101,6 +100,54 @@ const DraggableMenuBar = ({
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  // Update indicator position based on the active element
+  const updateIndicatorPosition = (activeElement) => {
+    if (!activeElement || !indicatorRef.current || !containerRef.current) return;
+
+    const rect = activeElement.getBoundingClientRect();
+    const containerRect = containerRef.current.getBoundingClientRect();
+
+    // Position the indicator underneath the active item
+    const width = rect.width;
+    const left = rect.left - containerRect.left;
+
+    indicatorRef.current.style.width = `${width}px`;
+    indicatorRef.current.style.transform = `translateX(${left}px)`;
+  };
+
+  // Handle active item changes
+  const handleActiveItem = (element) => {
+    if (element) {
+      updateIndicatorPosition(element);
+    }
+  };
+
+  // Set up scroll event listener
+  useEffect(() => {
+    const scrollElement = scrollContainerRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+
+    if (scrollElement) {
+      const handleScroll = () => {
+        // Find active item element and update indicator
+        const activeElements = containerRef.current?.querySelectorAll('[data-active="true"]');
+        if (activeElements && activeElements.length > 0) {
+          updateIndicatorPosition(activeElements[0]);
+        }
+      };
+
+      scrollElement.addEventListener('scroll', handleScroll);
+      return () => scrollElement.removeEventListener('scroll', handleScroll);
+    }
+  }, []);
+
+  // Update indicator position after DOM updates
+  useEffect(() => {
+    const activeElements = containerRef.current?.querySelectorAll('[data-active="true"]');
+    if (activeElements && activeElements.length > 0) {
+      updateIndicatorPosition(activeElements[0]);
+    }
+  }, [activeItem, menuItems]);
 
   const handleDragStart = () => {
     setIsDragging(true);
@@ -122,6 +169,14 @@ const DraggableMenuBar = ({
         onItemsReordered(newItems);
       }
     }
+
+    // Update indicator position after reordering
+    setTimeout(() => {
+      const activeElements = containerRef.current?.querySelectorAll('[data-active="true"]');
+      if (activeElements && activeElements.length > 0) {
+        updateIndicatorPosition(activeElements[0]);
+      }
+    }, 100);
   };
 
   const handleItemClick = (itemId) => {
@@ -160,6 +215,22 @@ const DraggableMenuBar = ({
       // Select the new item
       setActiveItem(uniqueId);
       onItemSelect(uniqueId);
+
+      // Scroll to the end to show the new item
+      setTimeout(() => {
+        const scrollViewport = scrollContainerRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+        if (scrollViewport) {
+          scrollViewport.scrollLeft = scrollViewport.scrollWidth;
+        }
+
+        // Update indicator after scrolling
+        setTimeout(() => {
+          const activeElements = containerRef.current?.querySelectorAll('[data-active="true"]');
+          if (activeElements && activeElements.length > 0) {
+            updateIndicatorPosition(activeElements[0]);
+          }
+        }, 150);
+      }, 50);
     }
   };
 
@@ -171,9 +242,9 @@ const DraggableMenuBar = ({
 
   return (
     <div>
-      <div className="flex items-center justify-between py-2">
-        <ScrollArea className="max-w-full" orientation="horizontal">
-          <div className="flex items-center gap-5">
+      <div className="flex items-center justify-between py-2 relative">
+        <ScrollArea className="w-full" orientation="horizontal" ref={scrollContainerRef}>
+          <div className="flex items-center gap-5 min-w-max relative" ref={containerRef}>
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
@@ -186,27 +257,17 @@ const DraggableMenuBar = ({
                 strategy={horizontalListSortingStrategy}
               >
                 {menuItems.map((item) => (
-                  <SortableMenuItem
-                    key={item.id}
-                    item={item}
-                    isActive={item.id === activeItem}
-                    onClick={handleItemClick}
-                    activeItemRef={activeIndicatorRef}
-                  />
+                  <div key={item.id} data-active={item.id === activeItem}>
+                    <SortableMenuItem
+                      item={item}
+                      isActive={item.id === activeItem}
+                      onClick={handleItemClick}
+                      onActive={handleActiveItem}
+                    />
+                  </div>
                 ))}
               </SortableContext>
             </DndContext>
-
-            {/* Active indicator that slides under tabs */}
-            <div
-              ref={activeIndicatorRef}
-              className="absolute bottom-0 h-0.5 bg-primary rounded-t"
-              style={{
-                width: '0px',
-                left: '0px',
-                transition: 'transform 300ms, width 300ms'
-              }}
-            />
 
             {allowAddItem && (
               <div
@@ -217,7 +278,19 @@ const DraggableMenuBar = ({
                 <span>New</span>
               </div>
             )}
+
+            {/* Active indicator that slides under tabs */}
+            <div
+              ref={indicatorRef}
+              className="absolute bottom-0 h-0.5 bg-primary rounded-t"
+              style={{
+                width: '0px',
+                left: '0px',
+                transition: 'transform 300ms, width 300ms'
+              }}
+            />
           </div>
+          <ScrollBar orientation="horizontal" />
         </ScrollArea>
       </div>
 

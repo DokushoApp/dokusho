@@ -32,7 +32,7 @@ const Base = () => {
   }, [theme])
   return (
     <div className={cn(
-      "flex w-full flex-1 flex-col overflow-hidden md:flex-row",
+      "flex w-full flex-1 flex-col md:flex-row",
       "h-screen"
     )}>
       <SidebarProvider
@@ -43,8 +43,8 @@ const Base = () => {
       >
         <AppSidebar variant="inset"/>
         <SidebarInset className={"p-2"}>
-          <AppBar/>
-          <div className="px-4 flex flex-1">
+          <AppBar className="flex-shrink-0"/>
+          <div className="px-4 flex flex-1 overflow-hidden">
             <Outlet/>
           </div>
         </SidebarInset>
