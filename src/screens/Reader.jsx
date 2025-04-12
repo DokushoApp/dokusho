@@ -26,7 +26,7 @@ const Reader = () => {
 
   // Render the reader with loaded manga
   return (
-    <div className="h-screen w-screen overflow-hidden">
+    <div className="h-screen w-screen">
       <MangaReader
         pages={pages}
         onClose={handleClose}
