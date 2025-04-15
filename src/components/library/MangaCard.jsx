@@ -1,67 +1,213 @@
 import React from 'react';
-import {MoreVertical} from 'lucide-react';
-import {Button} from '@/components/ui/button';
-import {convertFileSrc} from "@tauri-apps/api/core";
-import {useNavigate} from "react-router";
+import { useNavigate } from "react-router";
+import { convertFileSrc } from "@tauri-apps/api/core";
+import {
+  Pencil,
+  Trash,
+  Info,
+  BookOpen,
+  Tags,
+  Archive,
+  Share
+} from 'lucide-react';
 
-const MangaCard = ({manga}) => {
+// Import ShadCN UI components
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+
+const MangaCard = ({
+                     manga,
+                     onEdit,
+                     onDelete,
+                     onViewDetails,
+                     onAddToCategory,
+                     onArchive,
+                     onShare
+                   }) => {
   const navigate = useNavigate();
+
   const handleClick = (manga) => {
-    navigate('/reader', {state: {manga}});
+    navigate('/reader', { state: { manga } });
   };
+
   return (
-    <div
-      className="group relative rounded-md shadow-sm overflow-hidden transition-all hover:shadow-md bg-white dark:bg-neutral-800 cursor-pointer"
-      style={{width: '200px'}}
-      onClick={() => {
-        handleClick(manga)
-      }}>
-      {/* Cover Image */}
-      <div className="relative overflow-hidden" style={{height: '200px'}}>
-        <img
-          src={convertFileSrc(manga.cover)}
-          alt={manga.title}
-          className="w-full h-full object-cover transition-transform group-hover:scale-105"
-        />
-
-        {/* Hover overlay effect */}
-        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity"/>
-
-        {/* Reading progress indicator */}
-        {manga.progress > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200 dark:bg-neutral-600">
-            <div
-              className="h-1 bg-primary"
-              style={{width: `${manga.progress}%`}}
+    <ContextMenu>
+      <ContextMenuTrigger>
+        <div
+          className="group relative rounded-md shadow-sm overflow-hidden transition-all hover:shadow-md bg-card text-card-foreground cursor-pointer"
+          style={{ width: '200px' }}
+          onClick={() => handleClick(manga)}
+        >
+          {/* Cover Image with Overlay Title */}
+          <div className="relative overflow-hidden" style={{ height: '280px' }}>
+            <img
+              src={convertFileSrc(manga.cover)}
+              alt={manga.title}
+              className="w-full h-full object-cover transition-transform group-hover:scale-105"
             />
+
+            {/* Gradient overlay for title text contrast */}
+            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/80 to-transparent" />
+
+            {/* Title on cover image */}
+            <div className="absolute bottom-0 left-0 right-0 p-3 z-10">
+              <h3 className="text-white font-medium text-sm line-clamp-2">{manga.title}</h3>
+            </div>
+
+            {/* Hover overlay effect */}
+            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+            {/* Reading progress indicator */}
+            {manga.progress > 0 && (
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted">
+                <div
+                  className="h-1 bg-primary"
+                  style={{ width: `${manga.progress}%` }}
+                />
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {/* Info */}
-      <div className="p-3">
-        <div className="flex justify-between items-start">
-          <h3 className="font-medium text-sm text-gray-900 dark:text-gray-100 line-clamp-1">{manga.title}</h3>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0"
-            onClick={(e) => {
-              e.stopPropagation(); // Prevent card click from triggering
-              // Add your menu logic here
-            }}
-          >
-            <MoreVertical className="h-3 w-3"/>
-          </Button>
-        </div>
-
-        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          {/* Additional Info Panel - only show if lastRead exists */}
           {manga.lastRead && (
-            <span>Last read: {manga.lastRead}</span>
+            <div className="p-3">
+              <div className="text-xs text-muted-foreground">
+                <span>Last read: {manga.lastRead}</span>
+              </div>
+            </div>
           )}
         </div>
-      </div>
-    </div>
+      </ContextMenuTrigger>
+
+      <ContextMenuContent className="w-64">
+        <ContextMenuItem
+          onClick={(e) => {
+            e.stopPropagation();
+            handleClick(manga);
+          }}
+        >
+          <BookOpen className="mr-2 h-4 w-4" />
+          <span>Read Now</span>
+        </ContextMenuItem>
+
+        <ContextMenuItem
+          onClick={(e) => {
+            e.stopPropagation();
+            onViewDetails?.(manga);
+          }}
+        >
+          <Info className="mr-2 h-4 w-4" />
+          <span>View Details</span>
+        </ContextMenuItem>
+
+        <ContextMenuSeparator />
+
+        {/* Category Submenu */}
+        <ContextMenuSub>
+          <ContextMenuSubTrigger>
+            <Tags className="mr-2 h-4 w-4" />
+            <span>Change Category</span>
+          </ContextMenuSubTrigger>
+          <ContextMenuSubContent className="w-48">
+            <ContextMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddToCategory?.(manga, "reading");
+              }}
+            >
+              <span>Reading</span>
+            </ContextMenuItem>
+            <ContextMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddToCategory?.(manga, "completed");
+              }}
+            >
+              <span>Completed</span>
+            </ContextMenuItem>
+            <ContextMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddToCategory?.(manga, "plan-to-read");
+              }}
+            >
+              <span>Plan to Read</span>
+            </ContextMenuItem>
+            <ContextMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddToCategory?.(manga, "on-hold");
+              }}
+            >
+              <span>On Hold</span>
+            </ContextMenuItem>
+            <ContextMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddToCategory?.(manga, "dropped");
+              }}
+            >
+              <span>Dropped</span>
+            </ContextMenuItem>
+          </ContextMenuSubContent>
+        </ContextMenuSub>
+
+        <ContextMenuSeparator />
+
+        {/* Management Options */}
+        <ContextMenuItem
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit?.(manga);
+          }}
+        >
+          <Pencil className="mr-2 h-4 w-4" />
+          <span>Edit</span>
+        </ContextMenuItem>
+
+        <ContextMenuItem
+          onClick={(e) => {
+            e.stopPropagation();
+            onShare?.(manga);
+          }}
+        >
+          <Share className="mr-2 h-4 w-4" />
+          <span>Share</span>
+        </ContextMenuItem>
+
+        <ContextMenuItem
+          onClick={(e) => {
+            e.stopPropagation();
+            onArchive?.(manga);
+          }}
+        >
+          <Archive className="mr-2 h-4 w-4" />
+          <span>Archive</span>
+        </ContextMenuItem>
+
+        <ContextMenuSeparator />
+
+        {/* Danger Zone */}
+        <ContextMenuItem
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete?.(manga);
+          }}
+          className="text-destructive focus:text-destructive focus:bg-destructive/10"
+        >
+          <Trash className="mr-2 h-4 w-4" />
+          <span>Delete</span>
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 };
 
