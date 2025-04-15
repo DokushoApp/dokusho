@@ -35,4 +35,10 @@ const loadLibraryAtom = atom(null, async (get, set) => {
   set(libraryAtom, JSON.parse(libraryData))
 })
 
-export {libraryAtom, initializeLibraryAtom,loadLibraryAtom};
+const saveLibraryAtom = atom(null, async (get, set) => {
+  await writeTextFile("library.json", JSON.stringify(get(libraryAtom)), {
+    baseDir: BaseDirectory.AppData,
+  });
+})
+
+export {libraryAtom, initializeLibraryAtom,loadLibraryAtom, saveLibraryAtom};
