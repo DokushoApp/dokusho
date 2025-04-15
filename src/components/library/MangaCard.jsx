@@ -156,15 +156,15 @@ const MangaCard = ({manga}) => {
         <ContextMenuSeparator/>
 
         {/* Management Options */}
-        <ContextMenuItem
-          onClick={(e) => {
-            e.stopPropagation();
-            // onEdit?.(manga);
-          }}
-        >
-          <Pencil className="mr-2 h-4 w-4"/>
-          <span>Edit</span>
-        </ContextMenuItem>
+        {/*<ContextMenuItem*/}
+        {/*  onClick={(e) => {*/}
+        {/*    e.stopPropagation();*/}
+        {/*    // onEdit?.(manga);*/}
+        {/*  }}*/}
+        {/*>*/}
+        {/*  <Pencil className="mr-2 h-4 w-4"/>*/}
+        {/*  <span>Edit</span>*/}
+        {/*</ContextMenuItem>*/}
 
         {/*<ContextMenuItem*/}
         {/*  onClick={(e) => {*/}
@@ -176,7 +176,7 @@ const MangaCard = ({manga}) => {
         {/*  <span>Archive</span>*/}
         {/*</ContextMenuItem>*/}
 
-        <ContextMenuSeparator/>
+        {/*<ContextMenuSeparator/>*/}
 
         {/* Danger Zone */}
         <ContextMenuItem
