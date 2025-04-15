@@ -7,16 +7,16 @@ import {exists, readTextFile, writeTextFile} from "@tauri-apps/plugin-fs";
 export const defaultSettings = {
   theme: 'system',
   sidebar_collapsed: false,
-  default_category_tab: "reading",
-  manga_card_size: "medium",
+  default_category: "HjFCo9Zlih",
+  selected_category_tab: "reading",
+  manga_card_size: "default",
   categories:[
-    {id: "picked-up", name: "Picked Up"},
-    {id: "reading", name: "Reading"},
-    {id: "on-hold", name: "On Hold"},
-    {id: "completed", name: "Completed"},
-    {id: "dropped", name: "Dropped"}
+    {id: "HjFCo9Zlih", name: "Picked Up"},
+    {id: "M6wEcKUjJO", name: "Reading"},
+    {id: "NOQI3t7Xuo", name: "On Hold"},
+    {id: "LmGttS3i8c", name: "Completed"},
+    {id: "ut8dw483Cj", name: "Dropped"}
   ],
-  default_category: "plan-to-read",
   reading_mode:"left-to-right",
   reading_page_layout:"one-page",
   reader_zoom:1.0,

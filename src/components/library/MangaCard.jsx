@@ -1,6 +1,6 @@
 import React from 'react';
-import { useNavigate } from "react-router";
-import { convertFileSrc } from "@tauri-apps/api/core";
+import {useNavigate} from "react-router";
+import {convertFileSrc} from "@tauri-apps/api/core";
 import {
   Pencil,
   Trash,
@@ -22,32 +22,53 @@ import {
   ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import {settingsAtom} from "@/store/settings.js";
+import {focusAtom} from "jotai-optics";
+import {libraryAtom, saveLibraryAtom} from "@/store/library.js";
+import {useAtom, useAtomValue} from "jotai";
 
-const MangaCard = ({
-                     manga,
-                     onEdit,
-                     onDelete,
-                     onViewDetails,
-                     onAddToCategory,
-                     onArchive,
-                     onShare
-                   }) => {
+const categoriesAtom = focusAtom(settingsAtom, optic => optic.prop("categories"));
+const selectedCategoryAtom = focusAtom(settingsAtom, optic => optic.prop("selected_category"))
+const mangaListAtom = focusAtom(libraryAtom, optic => optic.prop("manga"))
+
+const MangaCard = ({manga}) => {
   const navigate = useNavigate();
+  const categories = useAtomValue(categoriesAtom);
+  const [mangaList, setMangaList] = useAtom(mangaListAtom);
+  const selectedCategory = useAtomValue(selectedCategoryAtom);
+
+  const [, saveLibrary] = useAtom(saveLibraryAtom);
 
   const handleClick = (manga) => {
-    navigate('/reader', { state: { manga } });
+    navigate('/reader', {state: {manga}});
   };
+
+  const handleValueChange = (setter,value) => {
+    setter(value);
+    setTimeout(() => saveLibrary(), 0);
+  };
+
+  const onChangeToCategory = (categoryId) =>{
+    const item = mangaList.filter(m => m.id === manga.id)[0];
+    item.category = categoryId;
+    const finalList = mangaList.filter(m => m.id !== manga.id);
+    setMangaList([...finalList, item]);
+  }
+  const onDeleteManga = () => {
+    const items = mangaList.filter(m => m.id !== manga.id);
+    setMangaList(items);
+  }
 
   return (
     <ContextMenu>
       <ContextMenuTrigger>
         <div
           className="group relative rounded-md shadow-sm overflow-hidden transition-all hover:shadow-md bg-card text-card-foreground cursor-pointer"
-          style={{ width: '200px' }}
+          style={{width: '200px'}}
           onClick={() => handleClick(manga)}
         >
           {/* Cover Image with Overlay Title */}
-          <div className="relative overflow-hidden" style={{ height: '280px' }}>
+          <div className="relative overflow-hidden" style={{height: '280px'}}>
             <img
               src={convertFileSrc(manga.cover)}
               alt={manga.title}
@@ -55,7 +76,7 @@ const MangaCard = ({
             />
 
             {/* Gradient overlay for title text contrast */}
-            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/80 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/80 to-transparent"/>
 
             {/* Title on cover image */}
             <div className="absolute bottom-0 left-0 right-0 p-3 z-10">
@@ -63,14 +84,14 @@ const MangaCard = ({
             </div>
 
             {/* Hover overlay effect */}
-            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity"/>
 
             {/* Reading progress indicator */}
             {manga.progress > 0 && (
               <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted">
                 <div
                   className="h-1 bg-primary"
-                  style={{ width: `${manga.progress}%` }}
+                  style={{width: `${manga.progress}%`}}
                 />
               </div>
             )}
@@ -94,116 +115,78 @@ const MangaCard = ({
             handleClick(manga);
           }}
         >
-          <BookOpen className="mr-2 h-4 w-4" />
+          <BookOpen className="mr-2 h-4 w-4"/>
           <span>Read Now</span>
         </ContextMenuItem>
 
         <ContextMenuItem
           onClick={(e) => {
             e.stopPropagation();
-            onViewDetails?.(manga);
           }}
         >
-          <Info className="mr-2 h-4 w-4" />
+          <Info className="mr-2 h-4 w-4"/>
           <span>View Details</span>
         </ContextMenuItem>
 
-        <ContextMenuSeparator />
+        <ContextMenuSeparator/>
 
         {/* Category Submenu */}
         <ContextMenuSub>
           <ContextMenuSubTrigger>
-            <Tags className="mr-2 h-4 w-4" />
+            <Tags className="mr-2 h-4 w-4"/>
             <span>Change Category</span>
           </ContextMenuSubTrigger>
           <ContextMenuSubContent className="w-48">
-            <ContextMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddToCategory?.(manga, "reading");
-              }}
-            >
-              <span>Reading</span>
-            </ContextMenuItem>
-            <ContextMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddToCategory?.(manga, "completed");
-              }}
-            >
-              <span>Completed</span>
-            </ContextMenuItem>
-            <ContextMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddToCategory?.(manga, "plan-to-read");
-              }}
-            >
-              <span>Plan to Read</span>
-            </ContextMenuItem>
-            <ContextMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddToCategory?.(manga, "on-hold");
-              }}
-            >
-              <span>On Hold</span>
-            </ContextMenuItem>
-            <ContextMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddToCategory?.(manga, "dropped");
-              }}
-            >
-              <span>Dropped</span>
-            </ContextMenuItem>
+            {
+              categories.filter(category=>category.id!==selectedCategory).map(category => (
+                <ContextMenuItem
+                  key={category.id}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleValueChange(onChangeToCategory, category.id);
+                  }}
+                >
+                  <span>{category.name}</span>
+                </ContextMenuItem>
+              ))
+            }
           </ContextMenuSubContent>
         </ContextMenuSub>
 
-        <ContextMenuSeparator />
+        <ContextMenuSeparator/>
 
         {/* Management Options */}
         <ContextMenuItem
           onClick={(e) => {
             e.stopPropagation();
-            onEdit?.(manga);
+            // onEdit?.(manga);
           }}
         >
-          <Pencil className="mr-2 h-4 w-4" />
+          <Pencil className="mr-2 h-4 w-4"/>
           <span>Edit</span>
         </ContextMenuItem>
 
-        <ContextMenuItem
-          onClick={(e) => {
-            e.stopPropagation();
-            onShare?.(manga);
-          }}
-        >
-          <Share className="mr-2 h-4 w-4" />
-          <span>Share</span>
-        </ContextMenuItem>
+        {/*<ContextMenuItem*/}
+        {/*  onClick={(e) => {*/}
+        {/*    e.stopPropagation();*/}
+        {/*    onArchive?.(manga);*/}
+        {/*  }}*/}
+        {/*>*/}
+        {/*  <Archive className="mr-2 h-4 w-4"/>*/}
+        {/*  <span>Archive</span>*/}
+        {/*</ContextMenuItem>*/}
 
-        <ContextMenuItem
-          onClick={(e) => {
-            e.stopPropagation();
-            onArchive?.(manga);
-          }}
-        >
-          <Archive className="mr-2 h-4 w-4" />
-          <span>Archive</span>
-        </ContextMenuItem>
-
-        <ContextMenuSeparator />
+        <ContextMenuSeparator/>
 
         {/* Danger Zone */}
         <ContextMenuItem
           onClick={(e) => {
             e.stopPropagation();
-            onDelete?.(manga);
+            handleValueChange(onDeleteManga);
           }}
           className="text-destructive focus:text-destructive focus:bg-destructive/10"
         >
-          <Trash className="mr-2 h-4 w-4" />
+          <Trash className="mr-2 h-4 w-4"/>
           <span>Delete</span>
         </ContextMenuItem>
       </ContextMenuContent>
