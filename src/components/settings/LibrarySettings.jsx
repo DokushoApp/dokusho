@@ -15,6 +15,7 @@ import CategoryManager from "@/components/settings/CategoryManager";
 
 // Settings Jotai Atoms for Library tab
 const categoriesAtom = focusAtom(settingsAtom, optic => optic.prop("categories"));
+const selectedCategoryAtom = focusAtom(settingsAtom, optic => optic.prop("selected_category_tab"));
 const defaultCategoryAtom = focusAtom(settingsAtom, optic => optic.prop("default_category"));
 
 const LibrarySettings = () => {
@@ -24,6 +25,7 @@ const LibrarySettings = () => {
   // Get individual atoms for settings
   const [categories] = useAtom(categoriesAtom);
   const [defaultCategory, setDefaultCategory] = useAtom(defaultCategoryAtom);
+  const [selectedCategory, setSelectedCategory] = useAtom(selectedCategoryAtom);
   const [, saveSettings] = useAtom(saveSettingsAtom);
 
   // Auto-save handler for form elements
