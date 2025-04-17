@@ -19,7 +19,6 @@ import {
 import {restrictToHorizontalAxis} from "@dnd-kit/modifiers";
 import {arrayMove} from "@dnd-kit/sortable";
 import {Plus} from "lucide-react";
-import {ScrollArea, ScrollBar} from "@/components/ui/scroll-area";
 
 // Sortable menu item component
 const SortableMenuItem = ({item, isActive, onClick, onActive}) => {
