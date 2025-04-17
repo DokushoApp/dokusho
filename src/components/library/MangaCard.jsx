@@ -1,6 +1,6 @@
 import React from 'react';
 import {useNavigate} from "react-router";
-import {convertFileSrc} from "@tauri-apps/api/core";
+import {convertFileSrc, invoke} from "@tauri-apps/api/core";
 import {
   Pencil,
   Trash,
@@ -43,12 +43,12 @@ const MangaCard = ({manga}) => {
     navigate('/reader', {state: {manga}});
   };
 
-  const handleValueChange = (setter,value) => {
+  const handleValueChange = (setter, value) => {
     setter(value);
     setTimeout(() => saveLibrary(), 0);
   };
 
-  const onChangeToCategory = (categoryId) =>{
+  const onChangeToCategory = (categoryId) => {
     const item = mangaList.filter(m => m.id === manga.id)[0];
     item.category = categoryId;
     const finalList = mangaList.filter(m => m.id !== manga.id);
@@ -57,6 +57,7 @@ const MangaCard = ({manga}) => {
   const onDeleteManga = () => {
     const items = mangaList.filter(m => m.id !== manga.id);
     setMangaList(items);
+    setTimeout(() => invoke("delete_manga", {path:manga.path}), 0)
   }
 
   return (
@@ -138,7 +139,7 @@ const MangaCard = ({manga}) => {
           </ContextMenuSubTrigger>
           <ContextMenuSubContent className="w-48">
             {
-              categories.filter(category=>category.id!==selectedCategory).map(category => (
+              categories.filter(category => category.id !== selectedCategory).map(category => (
                 <ContextMenuItem
                   key={category.id}
                   onClick={(e) => {
