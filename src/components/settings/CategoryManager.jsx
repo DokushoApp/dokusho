@@ -18,7 +18,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { GripVertical, Trash2, Pencil, X } from "lucide-react";
 
 // Settings Jotai Atoms for categories
@@ -221,7 +220,7 @@ const CategoryManager = ({ open, onClose }) => {
           </div>
 
           <Label className="mb-2 block">Categories</Label>
-          <ScrollArea className="h-[300px] pr-4">
+          <div className="h-[300px] overflow-x-auto no-scrollbar pr-4">
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
@@ -242,7 +241,7 @@ const CategoryManager = ({ open, onClose }) => {
                 ))}
               </SortableContext>
             </DndContext>
-          </ScrollArea>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
