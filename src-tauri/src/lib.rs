@@ -32,6 +32,12 @@ fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
+
+#[tauri::command]
+fn delete_manga(path: &str) {
+    fs::remove_dir_all(path).ok();
+}
+
 #[tauri::command]
 async fn import_manga_folder<R: Runtime>(app: AppHandle<R>, manga_input: MangaInput) -> Result<Manga, String> {
     // Generate a unique ID for the manga
@@ -260,7 +266,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, import_manga_folder, import_manga_cbz])
+        .invoke_handler(tauri::generate_handler![greet, import_manga_folder, import_manga_cbz, delete_manga])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
