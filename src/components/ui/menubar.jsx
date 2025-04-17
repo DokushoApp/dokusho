@@ -9,7 +9,6 @@ import {
   DialogFooter,
   DialogTrigger
 } from "@/components/ui/dialog";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Plus, Check, X } from "lucide-react";
 
 const MenuBar = ({
@@ -91,7 +90,7 @@ const MenuBar = ({
 
   return (
     <div className="w-full mb-6 relative">
-      <ScrollArea className="w-full whitespace-nowrap">
+      <div className="w-full overflow-x-auto no-scrollbar whitespace-nowrap">
         <div className="flex items-center pt-4 pb-1 gap-6 relative">
           <div
             ref={indicatorRef}
@@ -154,8 +153,7 @@ const MenuBar = ({
             </Dialog>
           )}
         </div>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
+      </div>
     </div>
   );
 };
