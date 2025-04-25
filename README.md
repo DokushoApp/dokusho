@@ -11,7 +11,7 @@
 </div>
 
 <div align="center">
-  <img src="public/library-screen.jpeg" alt="Dokusho Library Screenshot" width="85%" style="border-radius: 8px; margin-top: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+  <img src="public/library-screen.png" alt="Dokusho Library Screenshot" width="85%" style="border-radius: 8px; margin-top: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
 </div>
 
 ## 📖 Overview
