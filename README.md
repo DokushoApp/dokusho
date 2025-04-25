@@ -16,7 +16,7 @@
 
 ## 📖 Overview
 
-Dokusho is a modern, cross-platform manga reader application that provides a seamless reading experience with library management features. Built with performance and user experience in mind, it leverages Tauri's native capabilities while providing a beautiful React interface.
+[Dokusho](https://dokusho.app) is a modern, cross-platform manga reader application that provides a seamless reading experience with library management features. Built with performance and user experience in mind, it leverages Tauri's native capabilities while providing a beautiful React interface. Visit our website at [dokusho.app](https://dokusho.app) for more information.
 
 ## ✨ Features
 
@@ -133,11 +133,11 @@ If you encounter any bugs or issues, please [create an issue](https://github.com
 
 ## 🔗 Links
 
-- [Website](https://dokusho.app)
-- [Documentation](https://docs.dokusho.app)
+- [Official Website](https://dokusho.app)
 - [GitHub Repository](https://github.com/uday-samsani/dokusho)
 - [Issue Tracker](https://github.com/uday-samsani/dokusho/issues)
 - [Release Notes](https://github.com/uday-samsani/dokusho/releases)
+- [Download Page](https://dokusho.app/download)
 
 ## 📄 License
 
@@ -161,5 +161,5 @@ The developers of this application do not have any affiliation with the content 
 
 <div align="center">
   <p>Built with ❤️ by the Dokusho team</p>
-  <p>© 2025 Dokusho</p>
+  <p>© 2025 <a href="https://dokusho.app">Dokusho</a></p>
 </div>
