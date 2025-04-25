@@ -10,6 +10,10 @@
 [![React](https://img.shields.io/badge/react-18.x-blue)](https://reactjs.org/)
 </div>
 
+<div align="center">
+  <img src="public/library-screen.jpeg" alt="Dokusho Library Screenshot" width="85%" style="border-radius: 8px; margin-top: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+</div>
+
 ## 📖 Overview
 
 Dokusho is a modern, cross-platform manga reader application that provides a seamless reading experience with library management features. Built with performance and user experience in mind, it leverages Tauri's native capabilities while providing a beautiful React interface.
