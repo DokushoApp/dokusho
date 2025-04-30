@@ -13,15 +13,28 @@
     "core:window:allow-start-dragging",
     {
       "identifier": "fs:default",
-      "allow": [{ "path": "$APPDATA/*" }]
+      "allow": [
+        {
+          "path": "$APPDATA/*"
+        }
+      ]
     },
     {
       "identifier": "fs:allow-app-read-recursive",
-      "allow": [{ "path": "$APPDATA/*" }]
+      "allow": [
+        {
+          "path": "$APPDATA/*"
+        }
+      ]
     },
     {
       "identifier": "fs:allow-app-write-recursive",
-      "allow": [{ "path": "$APPDATA/*" }]
-    }
+      "allow": [
+        {
+          "path": "$APPDATA/*"
+        }
+      ]
+    },
+    "http:default"
   ]
 }

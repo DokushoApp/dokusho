@@ -30,7 +30,7 @@ const SettingsScreen = () => {
         allowAddItem={false}
       />
 
-      <div className="py-6">
+      <div>
         {/* Render the appropriate settings component based on active tab */}
         {activeTab === "general" && <GeneralSettings />}
         {activeTab === "library" && <LibrarySettings />}

@@ -217,7 +217,7 @@ const MangaReader = ({
                 // Double page view
                 <div
                   className="flex justify-center items-center"
-                  style={{ transform: `scale(${zoom})`, transition: 'transform 0.2s ease' }}
+                  style={{ transform: `scale(${readerZoom})`, transition: 'transform 0.2s ease' }}
                 >
                   {/* Handle double page layout - show two pages side by side */}
                   {readingMode === 'right-to-left' ? (
