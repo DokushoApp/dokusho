@@ -20,7 +20,7 @@ export const defaultSettings = {
   reading_mode:"left-to-right",
   reading_page_layout:"one-page",
   reader_zoom:1.0,
-  extension_repo: null,
+  extension_repos: [],
   show_nsfw: false,
 };
 
@@ -42,7 +42,19 @@ const initializeSettingsAtom = atom(null, async(get, set)=>{
     })
 
     const settings = JSON.parse(file);
-    set(settingsAtom, settings);
+
+    // Ensure all default settings exist
+    const updatedSettings = {
+      ...defaultSettings,
+      ...settings,
+    };
+
+    // If extension_repos doesn't exist, add it
+    if (!settings.extension_repos) {
+      updatedSettings.extension_repos = [];
+    }
+
+    set(settingsAtom, updatedSettings);
   }
 })
 
@@ -55,7 +67,14 @@ const loadSettingsAtom = atom(
       })
 
       const settings = JSON.parse(file);
-      set(settingsAtom, settings);
+
+      // Ensure all default settings exist
+      const updatedSettings = {
+        ...defaultSettings,
+        ...settings,
+      };
+
+      set(settingsAtom, updatedSettings);
     } catch (error) {
       console.error('Failed to load settings:', error);
       return null;
@@ -98,4 +117,4 @@ const resetSettingsAtom = atom(
   }
 );
 
-export {settingsAtom, initializeSettingsAtom, loadSettingsAtom,saveSettingsAtom, resetSettingsAtom};
+export {settingsAtom, initializeSettingsAtom, loadSettingsAtom, saveSettingsAtom, resetSettingsAtom};
