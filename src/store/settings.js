@@ -20,7 +20,7 @@ export const defaultSettings = {
   reading_mode:"left-to-right",
   reading_page_layout:"one-page",
   reader_zoom:1.0,
-  extension_repo: "",
+  extension_repo: null,
   show_nsfw: false,
 };
 
