@@ -6,6 +6,7 @@ use std::path::Path;
 use tauri::Manager;
 use tauri::{AppHandle, Runtime};
 use zip::ZipArchive;
+
 mod extensions;
 
 #[derive(Debug, Deserialize)]
@@ -286,12 +287,15 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .plugin(extensions::init())
         .invoke_handler(tauri::generate_handler![
             greet,
             import_manga_folder,
             import_manga_cbz,
-            delete_manga
+            delete_manga,
+
+            extensions::validate_extension_repo,
+            extensions::validate_extension_repo_url,
+            extensions::refresh_extension_repo,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

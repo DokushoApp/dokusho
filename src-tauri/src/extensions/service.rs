@@ -1,28 +1,23 @@
+use tauri::{AppHandle, State};
+use tauri_plugin_http::reqwest;
+use tauri::Manager;
 use serde_json::Value;
 use std::fs;
 use std::path::PathBuf;
-use tauri::plugin::{self, TauriPlugin};
-use tauri::{AppHandle, Manager, Runtime, State};
 
-// Import tauri_plugin_http's reqwest instead of standalone reqwest
-use tauri_plugin_http::reqwest;
-
-// Extension repository validator
-#[tauri::command]
 pub async fn validate_extension_repo(path: &str) -> Result<bool, String> {
     println!("Validating extension repo: {}", path);
-    let content =
-        fs::read_to_string(path).map_err(|err| format!("Failed to read file: {}", err))?;
+    let content = fs::read_to_string(path)
+        .map_err(|err| format!("Failed to read file: {}", err))?;
 
     // Try to parse the JSON
-    let json: Value =
-        serde_json::from_str(&content).map_err(|err| format!("Invalid JSON: {}", err))?;
+    let json: Value = serde_json::from_str(&content)
+        .map_err(|err| format!("Invalid JSON: {}", err))?;
 
     // Validate the schema
     validate_repo_schema(&json)
 }
 
-#[tauri::command]
 pub async fn validate_extension_repo_url(url: &str) -> Result<bool, String> {
     println!("Validating extension repo URL: {}", url);
 
@@ -36,18 +31,20 @@ pub async fn validate_extension_repo_url(url: &str) -> Result<bool, String> {
         return Err(format!("HTTP error: {}", response.status()));
     }
 
-    // Parse the response as JSON
-    let json: Value = response
-        .json()
+    // First get the text content
+    let text = response
+        .text()
         .await
+        .map_err(|err| format!("Failed to read response: {}", err))?;
+
+    // Then parse the text as JSON
+    let json: Value = serde_json::from_str(&text)
         .map_err(|err| format!("Invalid JSON: {}", err))?;
 
     // Validate the schema
     validate_repo_schema(&json)
 }
 
-// In Tauri 2.0, we need to get AppHandle from the State
-#[tauri::command]
 pub async fn refresh_extension_repo(
     app: State<'_, AppHandle>,
     id: String,
@@ -90,8 +87,8 @@ pub async fn refresh_extension_repo(
     };
 
     // Parse and validate the JSON
-    let json: Value =
-        serde_json::from_str(&repo_json).map_err(|err| format!("Invalid JSON: {}", err))?;
+    let json: Value = serde_json::from_str(&repo_json)
+        .map_err(|err| format!("Invalid JSON: {}", err))?;
 
     // Validate the schema
     validate_repo_schema(&json)?;
@@ -109,7 +106,7 @@ pub async fn refresh_extension_repo(
 }
 
 // Process extensions from a repository and save them
-async fn process_repo_extensions(
+pub async fn process_repo_extensions(
     repo_json: &Value,
     extensions_dir: &PathBuf,
 ) -> Result<(), String> {
@@ -150,7 +147,7 @@ async fn process_repo_extensions(
 }
 
 // Validate the repository schema
-fn validate_repo_schema(json: &Value) -> Result<bool, String> {
+pub fn validate_repo_schema(json: &Value) -> Result<bool, String> {
     // Check for manifest
     let manifest = json
         .get("manifest")
@@ -216,7 +213,7 @@ fn validate_extension_schema(extension: &Value, index: usize) -> Result<bool, St
         .ok_or_else(|| format!("Extension at index {} missing 'api' field", index))?;
 
     // Validate required API endpoints
-    for endpoint in &["search", "mangaDetails", "chapterList", "pageList"] {
+    for endpoint in &["search", "manga_details", "chapter_list", "page_list"] {
         let endpoint_obj = api.get(endpoint).ok_or_else(|| {
             format!(
                 "Extension at index {} missing required '{}' API endpoint",
@@ -252,7 +249,7 @@ fn validate_endpoint_schema(
         ));
     }
 
-    if !endpoint.get("responseType").is_some_and(|v| v.is_string()) {
+    if !endpoint.get("response_type").is_some_and(|v| v.is_string()) {
         return Err(format!(
             "Extension at index {} missing 'responseType' in '{}' endpoint",
             extension_index, endpoint_name
@@ -273,9 +270,9 @@ fn validate_endpoint_schema(
         ));
     }
 
-    // Validate responseType is a supported type
+    // Validate response_type is a supported type
     let response_type = endpoint
-        .get("responseType")
+        .get("response_type")
         .unwrap()
         .as_str()
         .unwrap()
@@ -288,14 +285,4 @@ fn validate_endpoint_schema(
     }
 
     Ok(true)
-}
-
-pub fn init<R: Runtime>() -> TauriPlugin<R> {
-    plugin::Builder::<R>::new("extensions")
-        .invoke_handler(tauri::generate_handler![
-            validate_extension_repo,
-            validate_extension_repo_url,
-            refresh_extension_repo,
-        ])
-        .build()
 }
