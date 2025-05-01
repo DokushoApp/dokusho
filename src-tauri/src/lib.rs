@@ -24,7 +24,10 @@ pub fn run() {
             // Extensions Commands
             extensions::validate_extension_repo,
             extensions::validate_extension_repo_url,
-            extensions::refresh_extension_repo,
+            extensions::create_extensions_from_repo,
+            extensions::create_extensions_from_url,
+            extensions::get_extensions_list,
+            extensions::delete_extension_repo,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
