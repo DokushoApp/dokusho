@@ -1,23 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { open } from '@tauri-apps/plugin-dialog';
-import { invoke } from "@tauri-apps/api/core";
-import { useAtom } from "jotai";
-import { focusAtom } from "jotai-optics";
-import { settingsAtom, saveSettingsAtom } from "@/store/settings";
-import { extensionsAtom, refreshExtensionsAtom } from "@/store/extensions";
-
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter
 } from "@/components/ui/card";
 import {
   Dialog,
@@ -35,50 +26,34 @@ import {
   TabsTrigger
 } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  FileText,
-  Link2,
-  Plus,
-  RefreshCw,
-  Trash2,
-  AlertCircle,
-  Globe,
-  ExternalLink,
-  Package
-} from "lucide-react";
+import { useAtom } from "jotai";
+import { focusAtom } from "jotai-optics";
+import { settingsAtom, saveSettingsAtom } from "@/store/settings";
+import { invoke } from "@tauri-apps/api/core";
+import { open } from "@tauri-apps/plugin-dialog";
+import { nanoid } from 'nanoid';
+import { Plus, ExternalLink, Trash2, RefreshCw, Link2, FileText, Download } from "lucide-react";
 
-// NSFW setting atom
+// Settings Jotai Atoms for Extension tab
 const showNsfwAtom = focusAtom(settingsAtom, optic => optic.prop("show_nsfw"));
 
 const ExtensionSettings = () => {
-  // State
+  // State for extension dialog
+  const [isAddExtensionOpen, setIsAddExtensionOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("file");
+  const [extensionUrl, setExtensionUrl] = useState("");
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [extensions, setExtensions] = useState([]);
+
+  // Get individual atoms for settings
   const [showNSFW, setShowNSFW] = useAtom(showNsfwAtom);
   const [, saveSettings] = useAtom(saveSettingsAtom);
-  const [extensionsData, setExtensionsData] = useAtom(extensionsAtom);
-  const [, refreshExtensions] = useAtom(refreshExtensionsAtom);
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [isAddRepoDialogOpen, setIsAddRepoDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("file");
-  const [repoUrl, setRepoUrl] = useState("");
-  const [repoName, setRepoName] = useState("");
-
-  // Load extensions on mount
+  // Load extensions on component mount
   useEffect(() => {
-    const loadExtensions = async () => {
-      setLoading(true);
-      try {
-        await refreshExtensions();
-      } catch (err) {
-        setError(`Failed to load extensions: ${err.toString()}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadExtensions();
-  }, [refreshExtensions]);
+  }, []);
 
   // Auto-save handler for form elements
   const handleValueChange = (setter, value) => {
@@ -86,7 +61,21 @@ const ExtensionSettings = () => {
     setTimeout(() => saveSettings(), 0);
   };
 
-  // Handle file repository addition
+  // Load all extensions
+  const loadExtensions = async () => {
+    try {
+      setLoading(true);
+      const result = await invoke("get_all_extensions");
+      setExtensions(result.extensions || []);
+    } catch (err) {
+      console.error("Failed to load extensions:", err);
+      setError("Failed to load extensions: " + err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle file upload for extension
   const handleFileUpload = async () => {
     try {
       setError(null);
@@ -98,356 +87,302 @@ const ExtensionSettings = () => {
           name: 'JSON',
           extensions: ['json']
         }],
-        title: 'Select Extension Repository File'
+        title: 'Select Extension File'
       });
 
       if (selected) {
         const filePath = selected.toString();
 
-        // First validate the repository
-        await invoke("validate_extension_repo", { path: filePath });
+        // Validate the extension file
+        try {
+          const extension = await invoke("validate_extension_file", { path: filePath });
 
-        // Then create the repository
-        await invoke("create_extensions_from_repo", {
-          path: filePath,
-          name: repoName || null
-        });
+          // Add source info
+          extension.source_type = 'file';
+          extension.source_path = filePath;
+          extension.added_at = new Date().toISOString();
 
-        // Refresh extensions list
-        await refreshExtensions();
+          // Add the extension
+          await invoke("add_extension", { extension });
 
-        // Close dialog and reset form
-        setIsAddRepoDialogOpen(false);
-        setRepoName("");
-        setRepoUrl("");
+          // Reload extensions
+          await loadExtensions();
+
+          // Close dialog and reset form
+          setIsAddExtensionOpen(false);
+          setExtensionUrl("");
+        } catch (validationErr) {
+          setError(`Invalid extension file: ${validationErr}`);
+        }
       }
     } catch (err) {
-      setError(`Error adding repository file: ${err.toString()}`);
+      console.error("Failed to add extension file:", err);
+      setError(`Failed to add extension file: ${err}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle URL repository addition
+  // Handle URL extension addition
   const handleUrlAdd = async () => {
     try {
       setError(null);
       setLoading(true);
 
-      if (!repoUrl) {
-        setError("Please enter a repository URL");
+      if (!extensionUrl) {
+        setError("Please enter an extension URL");
         setLoading(false);
         return;
       }
 
       // Validate the URL
-      if (!repoUrl.startsWith('http://') && !repoUrl.startsWith('https://')) {
+      if (!extensionUrl.startsWith('http://') && !extensionUrl.startsWith('https://')) {
         setError("URL must start with http:// or https://");
         setLoading(false);
         return;
       }
 
-      // First validate the repository URL
-      await invoke("validate_extension_repo_url", { url: repoUrl });
+      // Validate extension URL
+      try {
+        const extension = await invoke("validate_extension_url", { url: extensionUrl });
 
-      // Then create the repository
-      await invoke("create_extensions_from_url", {
-        url: repoUrl,
-        name: repoName || null
-      });
+        // Add source info
+        extension.source_type = 'url';
+        extension.source_path = extensionUrl;
+        extension.added_at = new Date().toISOString();
 
-      // Refresh extensions list
-      await refreshExtensions();
+        // Add the extension
+        await invoke("add_extension", { extension });
 
-      // Close dialog and reset form
-      setIsAddRepoDialogOpen(false);
-      setRepoName("");
-      setRepoUrl("");
+        // Reload extensions
+        await loadExtensions();
+
+        // Close dialog and reset form
+        setIsAddExtensionOpen(false);
+        setExtensionUrl("");
+      } catch (validationErr) {
+        setError(`Invalid extension URL: ${validationErr}`);
+      }
     } catch (err) {
-      setError(`Error adding repository URL: ${err.toString()}`);
+      console.error("Failed to add extension URL:", err);
+      setError(`Failed to add extension URL: ${err}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle repository deletion
-  const handleDeleteRepo = async (repoId) => {
+  // Handle extension deletion
+  const handleDeleteExtension = async (extensionId) => {
     try {
       setLoading(true);
-      await invoke("delete_extension_repo", { id: repoId });
-      await refreshExtensions();
+      await invoke("remove_extension", { extensionId });
+      await loadExtensions();
     } catch (err) {
-      setError(`Error deleting repository: ${err.toString()}`);
+      console.error("Failed to delete extension:", err);
+      setError(`Failed to delete extension: ${err}`);
     } finally {
       setLoading(false);
     }
-  };
-
-  // Helper to get language display name
-  const getLanguageName = (code) => {
-    const languages = {
-      'en': 'English',
-      'ja': 'Japanese',
-      'ko': 'Korean',
-      'zh': 'Chinese',
-      'multi': 'Multiple Languages'
-    };
-    return languages[code] || code;
   };
 
   return (
     <div className="space-y-6">
       <p className="text-muted-foreground text-left mb-4">
-        Configure sources and content filtering for manga extensions
+        Add and manage extensions for your manga reader
       </p>
 
-      {/* NSFW Toggle */}
-      <div className="flex items-center justify-between py-3 border-b">
-        <div>
-          <Label htmlFor="showNSFW" className="text-base font-medium">Show NSFW Content</Label>
-          <p className="text-sm text-muted-foreground mt-1">
-            When enabled, adult content from extensions will be displayed
-          </p>
-        </div>
-        <Switch
-          id="showNSFW"
-          checked={showNSFW}
-          onCheckedChange={(value) => handleValueChange(setShowNSFW, value)}
-        />
-      </div>
+      {/* Extensions */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <Label className="text-base">Extensions</Label>
+          <Dialog open={isAddExtensionOpen} onOpenChange={setIsAddExtensionOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="gap-1">
+                <Plus className="h-4 w-4" />
+                <span>Add Extension</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Extension</DialogTitle>
+                <DialogDescription>
+                  Add an extension by file or URL to access more manga sources.
+                </DialogDescription>
+              </DialogHeader>
 
-      {/* Repository and Extension Management */}
-      <div className="pt-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium">Extension Sources</h3>
-          <div className="flex gap-2">
-            <Dialog open={isAddRepoDialogOpen} onOpenChange={setIsAddRepoDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="flex items-center gap-1">
-                  <Plus size={16} />
-                  <span>Add Repository</span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Add Extension Repository</DialogTitle>
-                  <DialogDescription>
-                    Add a repository to access more manga sources
-                  </DialogDescription>
-                </DialogHeader>
+              <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="mt-4">
+                <TabsList className="grid grid-cols-2">
+                  <TabsTrigger value="file" className="flex items-center gap-1">
+                    <FileText className="h-4 w-4" />
+                    <span>Local File</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="url" className="flex items-center gap-1">
+                    <Link2 className="h-4 w-4" />
+                    <span>URL</span>
+                  </TabsTrigger>
+                </TabsList>
 
-                <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="mt-4">
-                  <TabsList className="grid grid-cols-2">
-                    <TabsTrigger value="file" className="flex items-center gap-1">
-                      <FileText className="h-4 w-4" />
-                      <span>Local File</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="url" className="flex items-center gap-1">
-                      <Link2 className="h-4 w-4" />
-                      <span>URL</span>
-                    </TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="file" className="space-y-4 mt-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="repoName">Repository Name (Optional)</Label>
-                      <Input
-                        id="repoName"
-                        placeholder="My Manga Repository"
-                        value={repoName}
-                        onChange={(e) => setRepoName(e.target.value)}
-                      />
-                    </div>
-
-                    <Button
-                      onClick={handleFileUpload}
-                      className="w-full"
-                      disabled={loading}
-                    >
-                      {loading ? (
-                        <>
-                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                          Loading...
-                        </>
-                      ) : (
-                        <>
-                          <FileText className="h-4 w-4 mr-2" />
-                          Select Repository File
-                        </>
-                      )}
-                    </Button>
-                  </TabsContent>
-
-                  <TabsContent value="url" className="space-y-4 mt-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="repoName">Repository Name (Optional)</Label>
-                      <Input
-                        id="repoName"
-                        placeholder="My Manga Repository"
-                        value={repoName}
-                        onChange={(e) => setRepoName(e.target.value)}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="repoUrl">Repository URL</Label>
-                      <Input
-                        id="repoUrl"
-                        placeholder="https://example.com/manga-extensions.json"
-                        value={repoUrl}
-                        onChange={(e) => setRepoUrl(e.target.value)}
-                      />
-                    </div>
-
-                    <Button
-                      onClick={handleUrlAdd}
-                      className="w-full"
-                      disabled={loading || !repoUrl}
-                    >
-                      {loading ? (
-                        <>
-                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                          Loading...
-                        </>
-                      ) : (
-                        <>
-                          <Link2 className="h-4 w-4 mr-2" />
-                          Add Repository URL
-                        </>
-                      )}
-                    </Button>
-                  </TabsContent>
-                </Tabs>
-
-                {error && (
-                  <Alert variant="destructive" className="mt-4">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Error</AlertTitle>
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-
-                <DialogFooter className="mt-4">
-                  <Button variant="outline" onClick={() => setIsAddRepoDialogOpen(false)}>
-                    Cancel
+                <TabsContent value="file" className="space-y-4 mt-4">
+                  <Button
+                    onClick={handleFileUpload}
+                    className="w-full"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="h-4 w-4 mr-2" />
+                        Select Extension File
+                      </>
+                    )}
                   </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                </TabsContent>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              className="p-2"
-              onClick={() => refreshExtensions()}
-              disabled={loading}
-            >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            </Button>
-          </div>
+                <TabsContent value="url" className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="extensionUrl">Extension URL</Label>
+                    <Input
+                      id="extensionUrl"
+                      placeholder="https://example.com/extension.json"
+                      value={extensionUrl}
+                      onChange={(e) => setExtensionUrl(e.target.value)}
+                    />
+                  </div>
+
+                  <Button
+                    onClick={handleUrlAdd}
+                    className="w-full"
+                    disabled={loading || !extensionUrl}
+                  >
+                    {loading ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <Link2 className="h-4 w-4 mr-2" />
+                        Add Extension URL
+                      </>
+                    )}
+                  </Button>
+                </TabsContent>
+              </Tabs>
+
+              {error && (
+                <Alert variant="destructive" className="mt-4">
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              <DialogFooter className="mt-4">
+                <Button variant="outline" onClick={() => setIsAddExtensionOpen(false)}>
+                  Cancel
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
 
-        {error && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+        {/* Extension List */}
+        <div className="space-y-3 mt-2">
+          {loading && (
+            <div className="flex justify-center py-8">
+              <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          )}
 
-        {/* Repositories Section */}
-        <div className="mb-6">
-          <h4 className="text-sm font-medium text-muted-foreground mb-3">Repositories</h4>
-          <div className="space-y-2">
-            {extensionsData.repositories && extensionsData.repositories.length > 0 ? (
-              extensionsData.repositories.map(repo => (
-                <div
-                  key={repo.id}
-                  className="flex items-center justify-between p-3 bg-accent/10 rounded-md hover:bg-accent/20 transition-colors"
-                >
-                  <div className="flex-1 mr-4">
-                    <div className="font-medium">{repo.name}</div>
-                    <div className="text-xs text-muted-foreground truncate max-w-xs">{repo.url}</div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {repo.type === 'url' && (
+          {!loading && extensions.length > 0 ? (
+            extensions.map(extension => (
+              <Card key={extension.id} className="overflow-hidden">
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="text-base">
+                        {extension.name}
+                        {extension.nsfw && (
+                          <span className="text-xs bg-destructive text-destructive-foreground rounded-full px-2 py-0.5 ml-2">
+                            NSFW
+                          </span>
+                        )}
+                      </CardTitle>
+                      <CardDescription className="text-xs">
+                        v{extension.version} by {extension.author}
+                      </CardDescription>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {extension.source_type === 'url' && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => window.open(extension.source_path, '_blank')}
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
-                        onClick={() => window.open(repo.url, '_blank')}
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleDeleteExtension(extension.id)}
                       >
-                        <ExternalLink className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => handleDeleteRepo(repo.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-8 border border-dashed rounded-md">
-                <p className="text-muted-foreground">No repositories added</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Add a repository to access manga extensions
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <Separator className="my-6" />
-
-        {/* Extensions Section */}
-        <div>
-          <h4 className="text-sm font-medium text-muted-foreground mb-3">
-            Installed Extensions ({extensionsData.extensions?.length || 0})
-          </h4>
-
-          {extensionsData.extensions && extensionsData.extensions.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {extensionsData.extensions.map(ext => (
-                <Card key={ext.id} className="overflow-hidden border bg-card hover:bg-accent/5 transition-colors">
-                  <CardHeader className="p-4 pb-2">
-                    <div className="flex justify-between">
-                      <div>
-                        <CardTitle className="text-base">{ext.name}</CardTitle>
-                        <CardDescription className="text-xs">
-                          v{ext.version} {ext.nsfw && <span className="text-red-500 ml-1">(NSFW)</span>}
-                        </CardDescription>
-                      </div>
                     </div>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0 text-xs">
-                    {ext.description && <p className="text-muted-foreground mb-2">{ext.description}</p>}
-
-                    {ext.language && (
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Globe className="h-3 w-3" />
-                        <span>{getLanguageName(ext.language)}</span>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 border border-dashed rounded-md">
-              <Package className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-              <p className="text-muted-foreground">No extensions installed</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Add a repository to get manga extensions
+                  </div>
+                </CardHeader>
+                <CardContent className="py-0">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {extension.description}
+                  </p>
+                  <div className="text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      {extension.source_type === 'file' ? (
+                        <FileText className="h-3 w-3" />
+                      ) : (
+                        <Link2 className="h-3 w-3" />
+                      )}
+                      <span>Type: {extension.source_type === 'file' ? 'Local File' : 'URL'}</span>
+                    </div>
+                    <div className="mt-1">
+                      Added: {new Date(extension.added_at).toLocaleString()}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : !loading && (
+            <div className="text-center py-6 border border-dashed rounded-lg">
+              <Download className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
+              <p className="text-muted-foreground">No extensions added yet.</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Add extensions to access more manga sources.
               </p>
             </div>
           )}
         </div>
       </div>
+
+      {/* Show NSFW */}
+      <div className="flex items-center pt-4 border-t">
+        <Label htmlFor="showNSFW" className="w-48">Show NSFW Content</Label>
+        <div>
+          <Switch
+            id="showNSFW"
+            checked={showNSFW}
+            onCheckedChange={(value) => handleValueChange(setShowNSFW, value)}
+          />
+        </div>
+      </div>
+
+      <p className="text-xs text-muted-foreground mt-6">
+        Note: NSFW content will only be displayed if this option is enabled. Extensions can be used to add new manga sources to your reader.
+      </p>
     </div>
   );
 };
