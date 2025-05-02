@@ -31,33 +31,29 @@ import { focusAtom } from "jotai-optics";
 import { settingsAtom, saveSettingsAtom } from "@/store/settings";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
+import { nanoid } from 'nanoid';
 import { Plus, ExternalLink, Trash2, RefreshCw, Link2, FileText, Download } from "lucide-react";
 
 // Settings Jotai Atoms for Extension tab
 const showNsfwAtom = focusAtom(settingsAtom, optic => optic.prop("show_nsfw"));
-const extensionReposAtom = focusAtom(settingsAtom, optic => optic.prop("extension_repos"));
 
 const ExtensionSettings = () => {
-  // State for manage repository dialog
-  const [isManageRepoOpen, setIsManageRepoOpen] = useState(false);
+  // State for extension dialog
+  const [isAddExtensionOpen, setIsAddExtensionOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("file");
-  const [repoUrl, setRepoUrl] = useState("");
-  const [repoName, setRepoName] = useState("");
+  const [extensionUrl, setExtensionUrl] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [extensions, setExtensions] = useState([]);
 
   // Get individual atoms for settings
   const [showNSFW, setShowNSFW] = useAtom(showNsfwAtom);
-  const [extensionRepos, setExtensionRepos] = useAtom(extensionReposAtom);
   const [, saveSettings] = useAtom(saveSettingsAtom);
 
-  // Initialize extension_repos if it doesn't exist
+  // Load extensions on component mount
   useEffect(() => {
-    if (!extensionRepos) {
-      setExtensionRepos([]);
-      setTimeout(() => saveSettings(), 0);
-    }
-  }, [extensionRepos, setExtensionRepos, saveSettings]);
+    loadExtensions();
+  }, []);
 
   // Auto-save handler for form elements
   const handleValueChange = (setter, value) => {
@@ -65,7 +61,21 @@ const ExtensionSettings = () => {
     setTimeout(() => saveSettings(), 0);
   };
 
-  // Handle file upload for extension repository
+  // Load all extensions
+  const loadExtensions = async () => {
+    try {
+      setLoading(true);
+      const result = await invoke("get_all_extensions");
+      setExtensions(result.extensions || []);
+    } catch (err) {
+      console.error("Failed to load extensions:", err);
+      setError("Failed to load extensions: " + err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle file upload for extension
   const handleFileUpload = async () => {
     try {
       setError(null);
@@ -77,123 +87,100 @@ const ExtensionSettings = () => {
           name: 'JSON',
           extensions: ['json']
         }],
-        title: 'Select Extension Repository File'
+        title: 'Select Extension File'
       });
 
       if (selected) {
         const filePath = selected.toString();
-        const fileName = filePath.split('/').pop().split('\\').pop();
 
-        // Validate the repository file
+        // Validate the extension file
         try {
-          // Use invoke to check if the file contains valid extension data
-          // This assumes you've implemented a validateExtensionRepo function on the Rust side
-          await invoke("validate_extension_repo", { path: filePath });
+          const extension = await invoke("validate_extension_file", { path: filePath });
 
-          // Add to repositories list
-          const newRepo = {
-            id: Date.now().toString(),
-            name: repoName || fileName.replace('.json', ''),
-            type: 'file',
-            url: filePath,
-            addedAt: new Date().toISOString()
-          };
+          // Add source info
+          extension.source_type = 'file';
+          extension.source_path = filePath;
+          extension.added_at = new Date().toISOString();
 
-          setExtensionRepos([...extensionRepos, newRepo]);
-          setTimeout(() => saveSettings(), 0);
+          // Add the extension
+          await invoke("add_extension", { extension });
+
+          // Reload extensions
+          await loadExtensions();
 
           // Close dialog and reset form
-          setIsManageRepoOpen(false);
-          setRepoName("");
-          setRepoUrl("");
+          setIsAddExtensionOpen(false);
+          setExtensionUrl("");
         } catch (validationErr) {
-          setError(`Invalid extension repository file: ${validationErr}`);
+          setError(`Invalid extension file: ${validationErr}`);
         }
       }
     } catch (err) {
-      console.error("Failed to add repository file:", err);
-      setError(`Failed to add repository file: ${err}`);
+      console.error("Failed to add extension file:", err);
+      setError(`Failed to add extension file: ${err}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle URL repository addition
+  // Handle URL extension addition
   const handleUrlAdd = async () => {
     try {
       setError(null);
       setLoading(true);
 
-      if (!repoUrl) {
-        setError("Please enter a repository URL");
+      if (!extensionUrl) {
+        setError("Please enter an extension URL");
         setLoading(false);
         return;
       }
 
       // Validate the URL
-      if (!repoUrl.startsWith('http://') && !repoUrl.startsWith('https://')) {
+      if (!extensionUrl.startsWith('http://') && !extensionUrl.startsWith('https://')) {
         setError("URL must start with http:// or https://");
         setLoading(false);
         return;
       }
 
-      // Validate repository URL
+      // Validate extension URL
       try {
-        // Use invoke to check if the URL contains valid extension data
-        // This assumes you've implemented a validateExtensionRepoUrl function on the Rust side
-        await invoke("validate_extension_repo_url", { url: repoUrl });
+        const extension = await invoke("validate_extension_url", { url: extensionUrl });
 
-        // Add to repositories list
-        const newRepo = {
-          id: Date.now().toString(),
-          name: repoName || new URL(repoUrl).hostname,
-          type: 'url',
-          url: repoUrl,
-          addedAt: new Date().toISOString()
-        };
+        // Add source info
+        extension.source_type = 'url';
+        extension.source_path = extensionUrl;
+        extension.added_at = new Date().toISOString();
 
-        setExtensionRepos([...extensionRepos, newRepo]);
-        setTimeout(() => saveSettings(), 0);
+        // Add the extension
+        await invoke("add_extension", { extension });
+
+        // Reload extensions
+        await loadExtensions();
 
         // Close dialog and reset form
-        setIsManageRepoOpen(false);
-        setRepoName("");
-        setRepoUrl("");
+        setIsAddExtensionOpen(false);
+        setExtensionUrl("");
       } catch (validationErr) {
-        setError(`Invalid extension repository URL: ${validationErr}`);
+        setError(`Invalid extension URL: ${validationErr}`);
       }
     } catch (err) {
-      console.error("Failed to add repository URL:", err);
-      setError(`Failed to add repository URL: ${err}`);
+      console.error("Failed to add extension URL:", err);
+      setError(`Failed to add extension URL: ${err}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle repository deletion
-  const handleDeleteRepo = (repoId) => {
-    const updatedRepos = extensionRepos.filter(repo => repo.id !== repoId);
-    setExtensionRepos(updatedRepos);
-    setTimeout(() => saveSettings(), 0);
-  };
-
-  // Handle repository refresh
-  const handleRefreshRepo = async (repo) => {
+  // Handle extension deletion
+  const handleDeleteExtension = async (extensionId) => {
     try {
       setLoading(true);
-
-      // This assumes you've implemented a refreshExtensionRepo function on the Rust side
-      await invoke("refresh_extension_repo", {
-        id: repo.id,
-        url: repo.url,
-        type: repo.type
-      });
-
-      // Show success message or update UI as needed
-      setLoading(false);
+      await invoke("remove_extension", { extensionId });
+      await loadExtensions();
     } catch (err) {
-      console.error("Failed to refresh repository:", err);
-      setError(`Failed to refresh repository: ${err}`);
+      console.error("Failed to delete extension:", err);
+      setError(`Failed to delete extension: ${err}`);
+    } finally {
       setLoading(false);
     }
   };
@@ -201,25 +188,25 @@ const ExtensionSettings = () => {
   return (
     <div className="space-y-6">
       <p className="text-muted-foreground text-left mb-4">
-        Configure extension sources and filters
+        Add and manage extensions for your manga reader
       </p>
 
-      {/* Extension Repositories */}
+      {/* Extensions */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <Label className="text-base">Extension Repositories</Label>
-          <Dialog open={isManageRepoOpen} onOpenChange={setIsManageRepoOpen}>
+          <Label className="text-base">Extensions</Label>
+          <Dialog open={isAddExtensionOpen} onOpenChange={setIsAddExtensionOpen}>
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1">
                 <Plus className="h-4 w-4" />
-                <span>Add Repository</span>
+                <span>Add Extension</span>
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Add Extension Repository</DialogTitle>
+                <DialogTitle>Add Extension</DialogTitle>
                 <DialogDescription>
-                  Add a repository by file or URL to access more extensions.
+                  Add an extension by file or URL to access more manga sources.
                 </DialogDescription>
               </DialogHeader>
 
@@ -236,16 +223,6 @@ const ExtensionSettings = () => {
                 </TabsList>
 
                 <TabsContent value="file" className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="repoName">Repository Name (Optional)</Label>
-                    <Input
-                      id="repoName"
-                      placeholder="My Extensions Repository"
-                      value={repoName}
-                      onChange={(e) => setRepoName(e.target.value)}
-                    />
-                  </div>
-
                   <Button
                     onClick={handleFileUpload}
                     className="w-full"
@@ -259,7 +236,7 @@ const ExtensionSettings = () => {
                     ) : (
                       <>
                         <FileText className="h-4 w-4 mr-2" />
-                        Select Repository File
+                        Select Extension File
                       </>
                     )}
                   </Button>
@@ -267,29 +244,19 @@ const ExtensionSettings = () => {
 
                 <TabsContent value="url" className="space-y-4 mt-4">
                   <div className="space-y-2">
-                    <Label htmlFor="repoName">Repository Name (Optional)</Label>
+                    <Label htmlFor="extensionUrl">Extension URL</Label>
                     <Input
-                      id="repoName"
-                      placeholder="My Extensions Repository"
-                      value={repoName}
-                      onChange={(e) => setRepoName(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="repoUrl">Repository URL</Label>
-                    <Input
-                      id="repoUrl"
-                      placeholder="https://example.com/extensions.json"
-                      value={repoUrl}
-                      onChange={(e) => setRepoUrl(e.target.value)}
+                      id="extensionUrl"
+                      placeholder="https://example.com/extension.json"
+                      value={extensionUrl}
+                      onChange={(e) => setExtensionUrl(e.target.value)}
                     />
                   </div>
 
                   <Button
                     onClick={handleUrlAdd}
                     className="w-full"
-                    disabled={loading || !repoUrl}
+                    disabled={loading || !extensionUrl}
                   >
                     {loading ? (
                       <>
@@ -299,7 +266,7 @@ const ExtensionSettings = () => {
                     ) : (
                       <>
                         <Link2 className="h-4 w-4 mr-2" />
-                        Add Repository URL
+                        Add Extension URL
                       </>
                     )}
                   </Button>
@@ -314,7 +281,7 @@ const ExtensionSettings = () => {
               )}
 
               <DialogFooter className="mt-4">
-                <Button variant="outline" onClick={() => setIsManageRepoOpen(false)}>
+                <Button variant="outline" onClick={() => setIsAddExtensionOpen(false)}>
                   Cancel
                 </Button>
               </DialogFooter>
@@ -322,25 +289,38 @@ const ExtensionSettings = () => {
           </Dialog>
         </div>
 
-        {/* Repository List */}
+        {/* Extension List */}
         <div className="space-y-3 mt-2">
-          {extensionRepos && extensionRepos.length > 0 ? (
-            extensionRepos.map(repo => (
-              <Card key={repo.id} className="overflow-hidden">
+          {loading && (
+            <div className="flex justify-center py-8">
+              <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          )}
+
+          {!loading && extensions.length > 0 ? (
+            extensions.map(extension => (
+              <Card key={extension.id} className="overflow-hidden">
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-start">
                     <div>
-                      <CardTitle className="text-base">{repo.name}</CardTitle>
-                      <CardDescription className="text-xs truncate max-w-[300px]">
-                        {repo.url}
+                      <CardTitle className="text-base">
+                        {extension.name}
+                        {extension.nsfw && (
+                          <span className="text-xs bg-destructive text-destructive-foreground rounded-full px-2 py-0.5 ml-2">
+                            NSFW
+                          </span>
+                        )}
+                      </CardTitle>
+                      <CardDescription className="text-xs">
+                        v{extension.version} by {extension.author}
                       </CardDescription>
                     </div>
                     <div className="flex items-center gap-1">
-                      {repo.type === 'url' && (
+                      {extension.source_type === 'url' && (
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => window.open(repo.url, '_blank')}
+                          onClick={() => window.open(extension.source_path, '_blank')}
                         >
                           <ExternalLink className="h-4 w-4" />
                         </Button>
@@ -348,15 +328,8 @@ const ExtensionSettings = () => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleRefreshRepo(repo)}
-                      >
-                        <RefreshCw className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
                         className="text-destructive hover:text-destructive"
-                        onClick={() => handleDeleteRepo(repo.id)}
+                        onClick={() => handleDeleteExtension(extension.id)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -364,28 +337,31 @@ const ExtensionSettings = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="py-0">
-                  <div className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {extension.description}
+                  </p>
+                  <div className="text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
-                      {repo.type === 'file' ? (
+                      {extension.source_type === 'file' ? (
                         <FileText className="h-3 w-3" />
                       ) : (
                         <Link2 className="h-3 w-3" />
                       )}
-                      <span>Type: {repo.type === 'file' ? 'Local File' : 'URL'}</span>
+                      <span>Type: {extension.source_type === 'file' ? 'Local File' : 'URL'}</span>
                     </div>
-                    <div className="text-xs mt-1">
-                      Added: {new Date(repo.addedAt).toLocaleString()}
+                    <div className="mt-1">
+                      Added: {new Date(extension.added_at).toLocaleString()}
                     </div>
                   </div>
                 </CardContent>
               </Card>
             ))
-          ) : (
+          ) : !loading && (
             <div className="text-center py-6 border border-dashed rounded-lg">
               <Download className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
-              <p className="text-muted-foreground">No repositories added yet.</p>
+              <p className="text-muted-foreground">No extensions added yet.</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Add a repository to access more extensions.
+                Add extensions to access more manga sources.
               </p>
             </div>
           )}
@@ -394,7 +370,7 @@ const ExtensionSettings = () => {
 
       {/* Show NSFW */}
       <div className="flex items-center pt-4 border-t">
-        <Label htmlFor="showNSFW" className="w-48">Show NSFW</Label>
+        <Label htmlFor="showNSFW" className="w-48">Show NSFW Content</Label>
         <div>
           <Switch
             id="showNSFW"
@@ -405,7 +381,7 @@ const ExtensionSettings = () => {
       </div>
 
       <p className="text-xs text-muted-foreground mt-6">
-        Note: NSFW content will only be displayed if this option is enabled. You must restart the application after changing extension repositories.
+        Note: NSFW content will only be displayed if this option is enabled. Extensions can be used to add new manga sources to your reader.
       </p>
     </div>
   );

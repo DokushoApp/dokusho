@@ -1,25 +1,37 @@
-use tauri::{AppHandle, State};
-use tauri_plugin_http::reqwest;
+// src-tauri/src/extensions/service.rs
+use tauri::{AppHandle, Runtime};
 use tauri::Manager;
-use serde_json::Value;
 use std::fs;
-use std::path::PathBuf;
+use std::path::Path;
+use chrono::Utc;
+use tauri_plugin_http::reqwest;
 
-pub async fn validate_extension_repo(path: &str) -> Result<bool, String> {
-    println!("Validating extension repo: {}", path);
+use crate::extensions::models::{Extension, ExtensionCollection, ApiEndpoint};
+
+// Validate an extension file
+pub async fn validate_extension_file(path: &str) -> Result<Extension, String> {
+    println!("Validating extension file: {}", path);
     let content = fs::read_to_string(path)
         .map_err(|err| format!("Failed to read file: {}", err))?;
 
     // Try to parse the JSON
-    let json: Value = serde_json::from_str(&content)
+    let mut extension: Extension = serde_json::from_str(&content)
         .map_err(|err| format!("Invalid JSON: {}", err))?;
 
-    // Validate the schema
-    validate_repo_schema(&json)
+    // Set source info for file-based extensions
+    extension.source_type = "file".to_string();
+    extension.source_path = path.to_string();
+    extension.added_at = Utc::now().to_string();
+
+    // Validate the extension
+    validate_extension(&extension)?;
+
+    Ok(extension)
 }
 
-pub async fn validate_extension_repo_url(url: &str) -> Result<bool, String> {
-    println!("Validating extension repo URL: {}", url);
+// Validate an extension from URL
+pub async fn validate_extension_url(url: &str) -> Result<Extension, String> {
+    println!("Validating extension URL: {}", url);
 
     // Using tauri_plugin_http's reqwest Client
     let response = reqwest::get(url)
@@ -31,258 +43,175 @@ pub async fn validate_extension_repo_url(url: &str) -> Result<bool, String> {
         return Err(format!("HTTP error: {}", response.status()));
     }
 
-    // First get the text content
+    // Get the text content
     let text = response
         .text()
         .await
         .map_err(|err| format!("Failed to read response: {}", err))?;
 
-    // Then parse the text as JSON
-    let json: Value = serde_json::from_str(&text)
+    // Parse the text as JSON
+    let mut extension: Extension = serde_json::from_str(&text)
         .map_err(|err| format!("Invalid JSON: {}", err))?;
 
-    // Validate the schema
-    validate_repo_schema(&json)
+    // Set source info for URL-based extensions
+    extension.source_type = "url".to_string();
+    extension.source_path = url.to_string();
+    extension.added_at = Utc::now().to_string();
+
+    // Validate the extension
+    validate_extension(&extension)?;
+
+    Ok(extension)
 }
 
-pub async fn refresh_extension_repo(
-    app: State<'_, AppHandle>,
-    id: String,
-    url: String,
-    repo_type: String,
+// Add an extension
+pub async fn add_extension<R: Runtime>(
+    app: AppHandle<R>,
+    extension: Extension,
 ) -> Result<(), String> {
-    println!("Refreshing extension repo: {} ({})", id, repo_type);
+    // Get app data directory
+    let app_data_dir = app.path().app_data_dir().map_err(|err| err.to_string())?;
 
+    // Create extensions directory if it doesn't exist
+    let extensions_dir = app_data_dir.join("extensions");
+    fs::create_dir_all(&extensions_dir).map_err(|err| err.to_string())?;
+
+    // Create filename based on extension ID
+    let filename = format!("{}.json", extension.id);
+    let extension_path = extensions_dir.join(filename);
+
+    // Save the extension as a JSON file
+    let json = serde_json::to_string_pretty(&extension)
+        .map_err(|err| format!("Failed to serialize extension: {}", err))?;
+
+    fs::write(extension_path, json)
+        .map_err(|err| format!("Failed to write extension file: {}", err))?;
+
+    Ok(())
+}
+
+// Remove an extension
+pub async fn remove_extension<R: Runtime>(
+    app: AppHandle<R>,
+    extension_id: &str,
+) -> Result<(), String> {
+    // Get app data directory
     let app_data_dir = app.path().app_data_dir().map_err(|err| err.to_string())?;
     let extensions_dir = app_data_dir.join("extensions");
 
-    // Create extensions directory if it doesn't exist
+    // Create filename based on extension ID
+    let filename = format!("{}.json", extension_id);
+    let extension_path = extensions_dir.join(filename);
+
+    // Check if the file exists
+    if !extension_path.exists() {
+        return Err(format!("Extension with ID {} not found", extension_id));
+    }
+
+    // Remove the file
+    fs::remove_file(extension_path)
+        .map_err(|err| format!("Failed to remove extension file: {}", err))?;
+
+    Ok(())
+}
+
+// Get all extensions
+pub async fn get_all_extensions<R: Runtime>(
+    app: AppHandle<R>,
+) -> Result<ExtensionCollection, String> {
+    // Get app data directory
+    let app_data_dir = app.path().app_data_dir().map_err(|err| err.to_string())?;
+    let extensions_dir = app_data_dir.join("extensions");
+
+    // Create directory if it doesn't exist
     if !extensions_dir.exists() {
         fs::create_dir_all(&extensions_dir).map_err(|err| err.to_string())?;
+        return Ok(ExtensionCollection {
+            extensions: Vec::new(),
+            last_updated: Utc::now().to_string(),
+        });
     }
 
-    let repo_json = match repo_type.as_str() {
-        "file" => {
-            // Read the file content
-            fs::read_to_string(&url).map_err(|err| format!("Failed to read file: {}", err))?
-        }
-        "url" => {
-            // Using tauri_plugin_http's reqwest
-            let response = reqwest::get(&url)
-                .await
-                .map_err(|err| format!("Failed to fetch URL: {}", err))?;
+    // Read all JSON files in the directory
+    let mut extensions = Vec::new();
+    let entries = fs::read_dir(&extensions_dir)
+        .map_err(|err| format!("Failed to read extensions directory: {}", err))?;
 
-            // Check if the response is successful
-            if !response.status().is_success() {
-                return Err(format!("HTTP error: {}", response.status()));
+    for entry in entries {
+        let entry = entry.map_err(|err| format!("Failed to read directory entry: {}", err))?;
+        let path = entry.path();
+
+        // Only process JSON files
+        if path.is_file() && path.extension().map_or(false, |ext| ext == "json") {
+            match read_extension_from_file(&path) {
+                Ok(extension) => extensions.push(extension),
+                Err(err) => println!("Error reading extension from {}: {}", path.display(), err),
             }
-
-            // Get response text
-            response
-                .text()
-                .await
-                .map_err(|err| format!("Failed to read response: {}", err))?
-        }
-        _ => return Err(format!("Invalid repository type: {}", repo_type)),
-    };
-
-    // Parse and validate the JSON
-    let json: Value = serde_json::from_str(&repo_json)
-        .map_err(|err| format!("Invalid JSON: {}", err))?;
-
-    // Validate the schema
-    validate_repo_schema(&json)?;
-
-    // Save or update the repository
-    let repo_file_path = extensions_dir.join(format!("repo_{}.json", id));
-    fs::write(&repo_file_path, &repo_json)
-        .map_err(|err| format!("Failed to save repository: {}", err))?;
-
-    // Process the extensions in the repository
-    process_repo_extensions(&json, &extensions_dir).await?;
-
-    println!("Successfully refreshed extension repo: {}", id);
-    Ok(())
-}
-
-// Process extensions from a repository and save them
-pub async fn process_repo_extensions(
-    repo_json: &Value,
-    extensions_dir: &PathBuf,
-) -> Result<(), String> {
-    if let Some(extensions) = repo_json.get("extensions").and_then(|v| v.as_array()) {
-        for (index, extension) in extensions.iter().enumerate() {
-            // Extract extension data
-            let manifest = repo_json
-                .get("manifest")
-                .ok_or_else(|| "Repository missing manifest".to_string())?;
-
-            // Create a combined JSON for this extension
-            let mut extension_json = serde_json::Map::new();
-            extension_json.insert("manifest".to_string(), manifest.clone());
-
-            let mut extensions_array = Vec::new();
-            extensions_array.push(extension.clone());
-            extension_json.insert("extensions".to_string(), Value::Array(extensions_array));
-
-            // Get extension ID or generate one
-            let extension_id_string = match extension.get("id").and_then(|v| v.as_str()) {
-                Some(id) => id.to_string(),
-                None => format!("ext_{}", index),
-            };
-
-            // Save the extension file
-            let extension_file_path = extensions_dir.join(format!("{}.json", extension_id_string));
-            fs::write(
-                &extension_file_path,
-                Value::Object(extension_json).to_string(),
-            )
-                .map_err(|err| format!("Failed to save extension: {}", err))?;
-
-            println!("Saved extension: {}", extension_id_string);
         }
     }
+
+    // Create and return the collection
+    Ok(ExtensionCollection {
+        extensions,
+        last_updated: Utc::now().to_string(),
+    })
+}
+
+// Helper function to read extension from file
+fn read_extension_from_file(path: &Path) -> Result<Extension, String> {
+    let content = fs::read_to_string(path)
+        .map_err(|err| format!("Failed to read extension file: {}", err))?;
+
+    serde_json::from_str::<Extension>(&content)
+        .map_err(|err| format!("Invalid JSON in extension file {}: {}", path.display(), err))
+}
+
+// Validate an extension's structure
+fn validate_extension(extension: &Extension) -> Result<(), String> {
+    // Validate required fields
+    if extension.id.is_empty() {
+        return Err("Extension ID cannot be empty".to_string());
+    }
+    if extension.name.is_empty() {
+        return Err("Extension name cannot be empty".to_string());
+    }
+    if extension.version.is_empty() {
+        return Err("Extension version cannot be empty".to_string());
+    }
+    if extension.author.is_empty() {
+        return Err("Extension author cannot be empty".to_string());
+    }
+
+    // Validate API endpoints
+    validate_api_endpoint(&extension.api.search, "search")?;
+    validate_api_endpoint(&extension.api.manga_details, "manga_details")?;
+    validate_api_endpoint(&extension.api.chapter_list, "chapter_list")?;
+    validate_api_endpoint(&extension.api.page_list, "page_list")?;
 
     Ok(())
 }
 
-// Validate the repository schema
-pub fn validate_repo_schema(json: &Value) -> Result<bool, String> {
-    // Check for manifest
-    let manifest = json
-        .get("manifest")
-        .ok_or_else(|| "Repository missing manifest".to_string())?;
-
-    // Validate manifest fields
-    if !manifest.get("name").is_some_and(|v| v.is_string()) {
-        return Err("Manifest missing 'name' field".to_string());
+// Validate an API endpoint
+fn validate_api_endpoint(endpoint: &ApiEndpoint, name: &str) -> Result<(), String> {
+    if endpoint.url.is_empty() {
+        return Err(format!("API endpoint '{}' URL cannot be empty", name));
     }
 
-    if !manifest.get("version").is_some_and(|v| v.is_string()) {
-        return Err("Manifest missing 'version' field".to_string());
-    }
-
-    if !manifest.get("author").is_some_and(|v| v.is_string()) {
-        return Err("Manifest missing 'author' field".to_string());
-    }
-
-    if !manifest.get("description").is_some_and(|v| v.is_string()) {
-        return Err("Manifest missing 'description' field".to_string());
-    }
-
-    // Check for extensions array
-    let extensions = json
-        .get("extensions")
-        .ok_or_else(|| "Repository missing extensions array".to_string())?
-        .as_array()
-        .ok_or_else(|| "Extensions must be an array".to_string())?;
-
-    if extensions.is_empty() {
-        return Err("Extensions array is empty".to_string());
-    }
-
-    // Validate each extension
-    for (i, extension) in extensions.iter().enumerate() {
-        validate_extension_schema(extension, i)?;
-    }
-
-    Ok(true)
-}
-
-// Validate an individual extension schema
-fn validate_extension_schema(extension: &Value, index: usize) -> Result<bool, String> {
-    // Check required fields
-    if !extension.get("id").is_some_and(|v| v.is_string()) {
-        return Err(format!("Extension at index {} missing 'id' field", index));
-    }
-
-    if !extension.get("name").is_some_and(|v| v.is_string()) {
-        return Err(format!("Extension at index {} missing 'name' field", index));
-    }
-
-    if !extension.get("version").is_some_and(|v| v.is_string()) {
-        return Err(format!(
-            "Extension at index {} missing 'version' field",
-            index
-        ));
-    }
-
-    // Check for API object
-    let api = extension
-        .get("api")
-        .ok_or_else(|| format!("Extension at index {} missing 'api' field", index))?;
-
-    // Validate required API endpoints
-    for endpoint in &["search", "manga_details", "chapter_list", "page_list"] {
-        let endpoint_obj = api.get(endpoint).ok_or_else(|| {
-            format!(
-                "Extension at index {} missing required '{}' API endpoint",
-                index, endpoint
-            )
-        })?;
-
-        // Validate endpoint schema
-        validate_endpoint_schema(endpoint_obj, endpoint, index)?;
-    }
-
-    Ok(true)
-}
-
-// Validate an API endpoint schema
-fn validate_endpoint_schema(
-    endpoint: &Value,
-    endpoint_name: &str,
-    extension_index: usize,
-) -> Result<bool, String> {
-    // Check required fields
-    if !endpoint.get("url").is_some_and(|v| v.is_string()) {
-        return Err(format!(
-            "Extension at index {} missing 'url' in '{}' endpoint",
-            extension_index, endpoint_name
-        ));
-    }
-
-    if !endpoint.get("method").is_some_and(|v| v.is_string()) {
-        return Err(format!(
-            "Extension at index {} missing 'method' in '{}' endpoint",
-            extension_index, endpoint_name
-        ));
-    }
-
-    if !endpoint.get("response_type").is_some_and(|v| v.is_string()) {
-        return Err(format!(
-            "Extension at index {} missing 'responseType' in '{}' endpoint",
-            extension_index, endpoint_name
-        ));
-    }
-
-    // Validate method is a valid HTTP method
-    let method = endpoint
-        .get("method")
-        .unwrap()
-        .as_str()
-        .unwrap()
-        .to_uppercase();
+    let method = endpoint.method.to_uppercase();
     if !["GET", "POST", "PUT", "DELETE"].contains(&method.as_str()) {
         return Err(format!(
-            "Extension at index {} has invalid 'method' in '{}' endpoint: {}",
-            extension_index, endpoint_name, method
+            "API endpoint '{}' has invalid method: {}. Must be GET, POST, PUT, or DELETE",
+            name, method
         ));
     }
 
-    // Validate response_type is a supported type
-    let response_type = endpoint
-        .get("response_type")
-        .unwrap()
-        .as_str()
-        .unwrap()
-        .to_lowercase();
+    let response_type = endpoint.response_type.to_lowercase();
     if !["json", "html", "text"].contains(&response_type.as_str()) {
         return Err(format!(
-            "Extension at index {} has invalid 'responseType' in '{}' endpoint: {}",
-            extension_index, endpoint_name, response_type
+            "API endpoint '{}' has invalid response_type: {}. Must be json, html, or text",
+            name, response_type
         ));
     }
 
-    Ok(true)
+    Ok(())
 }

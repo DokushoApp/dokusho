@@ -8,6 +8,7 @@ import {useAtom, useAtomValue} from "jotai";
 import {initializeLibraryAtom} from "@/store/library.js";
 import {initializeSettingsAtom, settingsAtom} from "@/store/settings.js";
 import {focusAtom} from "jotai-optics";
+import {initializeExtensionsAtom} from "@/store/extensions.js";
 
 const themeAtom = focusAtom(settingsAtom, optic => optic.prop("theme"))
 
@@ -15,9 +16,11 @@ const Base = () => {
   const theme = useAtomValue(themeAtom);
   const [, initializeLibrary] = useAtom(initializeLibraryAtom)
   const [, initializeSettings] = useAtom(initializeSettingsAtom)
+  const [, initializeExtensions] = useAtom(initializeExtensionsAtom)
   useEffect(() => {
     initializeLibrary();
     initializeSettings();
+    initializeExtensions();
   }, [])
 
   useEffect(() => {

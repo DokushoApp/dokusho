@@ -22,9 +22,11 @@ pub fn run() {
             library::delete_manga,
 
             // Extensions Commands
-            extensions::validate_extension_repo,
-            extensions::validate_extension_repo_url,
-            extensions::refresh_extension_repo,
+            extensions::validate_extension_file,
+            extensions::validate_extension_url,
+            extensions::add_extension,
+            extensions::remove_extension,
+            extensions::get_all_extensions,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
