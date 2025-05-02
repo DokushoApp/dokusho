@@ -1,9 +1,12 @@
-use tauri::{AppHandle, State};
-use tauri_plugin_http::reqwest;
+// src-tauri/src/extensions/service.rs
+use tauri::{AppHandle, Runtime};
 use tauri::Manager;
 use std::fs;
+use std::path::Path;
 use chrono::Utc;
-use crate::extensions::models::{Extension, ExtensionCollection};
+use tauri_plugin_http::reqwest;
+
+use crate::extensions::models::{Extension, ExtensionCollection, ApiEndpoint};
 
 // Validate an extension file
 pub async fn validate_extension_file(path: &str) -> Result<Extension, String> {
@@ -12,8 +15,13 @@ pub async fn validate_extension_file(path: &str) -> Result<Extension, String> {
         .map_err(|err| format!("Failed to read file: {}", err))?;
 
     // Try to parse the JSON
-    let extension: Extension = serde_json::from_str(&content)
+    let mut extension: Extension = serde_json::from_str(&content)
         .map_err(|err| format!("Invalid JSON: {}", err))?;
+
+    // Set source info for file-based extensions
+    extension.source_type = "file".to_string();
+    extension.source_path = path.to_string();
+    extension.added_at = Utc::now().to_string();
 
     // Validate the extension
     validate_extension(&extension)?;
@@ -35,15 +43,20 @@ pub async fn validate_extension_url(url: &str) -> Result<Extension, String> {
         return Err(format!("HTTP error: {}", response.status()));
     }
 
-    // First get the text content
+    // Get the text content
     let text = response
         .text()
         .await
         .map_err(|err| format!("Failed to read response: {}", err))?;
 
-    // Then parse the text as JSON
-    let extension: Extension = serde_json::from_str(&text)
+    // Parse the text as JSON
+    let mut extension: Extension = serde_json::from_str(&text)
         .map_err(|err| format!("Invalid JSON: {}", err))?;
+
+    // Set source info for URL-based extensions
+    extension.source_type = "url".to_string();
+    extension.source_path = url.to_string();
+    extension.added_at = Utc::now().to_string();
 
     // Validate the extension
     validate_extension(&extension)?;
@@ -51,111 +64,106 @@ pub async fn validate_extension_url(url: &str) -> Result<Extension, String> {
     Ok(extension)
 }
 
-// Add an extension to the collection
-pub async fn add_extension(
-    app: State<'_, AppHandle>,
+// Add an extension
+pub async fn add_extension<R: Runtime>(
+    app: AppHandle<R>,
     extension: Extension,
 ) -> Result<(), String> {
+    // Get app data directory
     let app_data_dir = app.path().app_data_dir().map_err(|err| err.to_string())?;
-    let extensions_dir = app_data_dir.join("extensions");
 
     // Create extensions directory if it doesn't exist
-    if !extensions_dir.exists() {
-        fs::create_dir_all(&extensions_dir).map_err(|err| err.to_string())?;
-    }
+    let extensions_dir = app_data_dir.join("extensions");
+    fs::create_dir_all(&extensions_dir).map_err(|err| err.to_string())?;
 
-    // Load existing extensions
-    let collection_path = extensions_dir.join("extensions.json");
-    let mut collection = if collection_path.exists() {
-        let content = fs::read_to_string(&collection_path).map_err(|err| err.to_string())?;
-        serde_json::from_str::<ExtensionCollection>(&content).unwrap_or_else(|_| ExtensionCollection {
-            extensions: Vec::new(),
-            last_updated: Utc::now().to_rfc3339(),
-        })
-    } else {
-        ExtensionCollection {
-            extensions: Vec::new(),
-            last_updated: Utc::now().to_rfc3339(),
-        }
-    };
+    // Create filename based on extension ID
+    let filename = format!("{}.json", extension.id);
+    let extension_path = extensions_dir.join(filename);
 
-    // Check if extension already exists
-    let existing_index = collection.extensions.iter().position(|e| e.id == extension.id);
-    if let Some(index) = existing_index {
-        // Update existing extension
-        collection.extensions[index] = extension;
-    } else {
-        // Add new extension
-        collection.extensions.push(extension);
-    }
+    // Save the extension as a JSON file
+    let json = serde_json::to_string_pretty(&extension)
+        .map_err(|err| format!("Failed to serialize extension: {}", err))?;
 
-    // Update last_updated timestamp
-    collection.last_updated = Utc::now().to_rfc3339();
-
-    // Save the updated collection
-    let json = serde_json::to_string_pretty(&collection).map_err(|err| err.to_string())?;
-    fs::write(collection_path, json).map_err(|err| err.to_string())?;
+    fs::write(extension_path, json)
+        .map_err(|err| format!("Failed to write extension file: {}", err))?;
 
     Ok(())
 }
 
-// Remove an extension from the collection
-pub async fn remove_extension(
-    app: State<'_, AppHandle>,
+// Remove an extension
+pub async fn remove_extension<R: Runtime>(
+    app: AppHandle<R>,
     extension_id: &str,
 ) -> Result<(), String> {
+    // Get app data directory
     let app_data_dir = app.path().app_data_dir().map_err(|err| err.to_string())?;
     let extensions_dir = app_data_dir.join("extensions");
-    let collection_path = extensions_dir.join("extensions.json");
 
-    if !collection_path.exists() {
-        return Err("Extension collection file does not exist".to_string());
-    }
+    // Create filename based on extension ID
+    let filename = format!("{}.json", extension_id);
+    let extension_path = extensions_dir.join(filename);
 
-    // Load existing extensions
-    let content = fs::read_to_string(&collection_path).map_err(|err| err.to_string())?;
-    let mut collection = serde_json::from_str::<ExtensionCollection>(&content)
-        .map_err(|err| format!("Invalid JSON: {}", err))?;
-
-    // Find and remove the extension
-    let initial_len = collection.extensions.len();
-    collection.extensions.retain(|e| e.id != extension_id);
-
-    if collection.extensions.len() == initial_len {
+    // Check if the file exists
+    if !extension_path.exists() {
         return Err(format!("Extension with ID {} not found", extension_id));
     }
 
-    // Update last_updated timestamp
-    collection.last_updated = Utc::now().to_rfc3339();
-
-    // Save the updated collection
-    let json = serde_json::to_string_pretty(&collection).map_err(|err| err.to_string())?;
-    fs::write(collection_path, json).map_err(|err| err.to_string())?;
+    // Remove the file
+    fs::remove_file(extension_path)
+        .map_err(|err| format!("Failed to remove extension file: {}", err))?;
 
     Ok(())
 }
 
 // Get all extensions
-pub async fn get_all_extensions(
-    app: State<'_, AppHandle>,
+pub async fn get_all_extensions<R: Runtime>(
+    app: AppHandle<R>,
 ) -> Result<ExtensionCollection, String> {
+    // Get app data directory
     let app_data_dir = app.path().app_data_dir().map_err(|err| err.to_string())?;
     let extensions_dir = app_data_dir.join("extensions");
-    let collection_path = extensions_dir.join("extensions.json");
 
-    if !collection_path.exists() {
+    // Create directory if it doesn't exist
+    if !extensions_dir.exists() {
+        fs::create_dir_all(&extensions_dir).map_err(|err| err.to_string())?;
         return Ok(ExtensionCollection {
             extensions: Vec::new(),
-            last_updated: Utc::now().to_rfc3339(),
+            last_updated: Utc::now().to_string(),
         });
     }
 
-    // Load existing extensions
-    let content = fs::read_to_string(&collection_path).map_err(|err| err.to_string())?;
-    let collection = serde_json::from_str::<ExtensionCollection>(&content)
-        .map_err(|err| format!("Invalid JSON: {}", err))?;
+    // Read all JSON files in the directory
+    let mut extensions = Vec::new();
+    let entries = fs::read_dir(&extensions_dir)
+        .map_err(|err| format!("Failed to read extensions directory: {}", err))?;
 
-    Ok(collection)
+    for entry in entries {
+        let entry = entry.map_err(|err| format!("Failed to read directory entry: {}", err))?;
+        let path = entry.path();
+
+        // Only process JSON files
+        if path.is_file() && path.extension().map_or(false, |ext| ext == "json") {
+            match read_extension_from_file(&path) {
+                Ok(extension) => extensions.push(extension),
+                Err(err) => println!("Error reading extension from {}: {}", path.display(), err),
+            }
+        }
+    }
+
+    // Create and return the collection
+    Ok(ExtensionCollection {
+        extensions,
+        last_updated: Utc::now().to_string(),
+    })
+}
+
+// Helper function to read extension from file
+fn read_extension_from_file(path: &Path) -> Result<Extension, String> {
+    let content = fs::read_to_string(path)
+        .map_err(|err| format!("Failed to read extension file: {}", err))?;
+
+    serde_json::from_str::<Extension>(&content)
+        .map_err(|err| format!("Invalid JSON in extension file {}: {}", path.display(), err))
 }
 
 // Validate an extension's structure
@@ -184,7 +192,7 @@ fn validate_extension(extension: &Extension) -> Result<(), String> {
 }
 
 // Validate an API endpoint
-fn validate_api_endpoint(endpoint: &crate::extensions::models::ApiEndpoint, name: &str) -> Result<(), String> {
+fn validate_api_endpoint(endpoint: &ApiEndpoint, name: &str) -> Result<(), String> {
     if endpoint.url.is_empty() {
         return Err(format!("API endpoint '{}' URL cannot be empty", name));
     }

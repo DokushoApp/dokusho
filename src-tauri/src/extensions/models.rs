@@ -8,11 +8,16 @@ pub struct Extension {
     pub version: String,
     pub author: String,
     pub description: String,
+    #[serde(default)]
     pub nsfw: bool,
-    pub source_type: String, // "file" or "url"
-    pub source_path: String, // file path or URL
+    #[serde(default)]
+    pub source_type: String,
+    #[serde(default)]
+    pub source_path: String,
     pub api: ExtensionApi,
+    #[serde(default)]
     pub icon: Option<String>,
+    #[serde(default)]
     pub added_at: String,
 }
 
@@ -29,7 +34,9 @@ pub struct ApiEndpoint {
     pub url: String,
     pub method: String,
     pub response_type: String,
+    #[serde(default)]
     pub headers: Option<serde_json::Value>,
+    #[serde(default)]
     pub params: Option<serde_json::Value>,
 }
 
