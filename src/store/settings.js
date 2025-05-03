@@ -1,6 +1,7 @@
 import { atom } from 'jotai';
 import {BaseDirectory} from "@tauri-apps/api/path";
 import {exists, readTextFile, writeTextFile} from "@tauri-apps/plugin-fs";
+import {focusAtom} from "jotai-optics";
 
 
 // Default settings values
@@ -24,7 +25,10 @@ export const defaultSettings = {
   show_nsfw: false,
 };
 
+
 const settingsAtom = atom(defaultSettings);
+const showNsfwAtom = focusAtom(settingsAtom, optic => optic.prop("show_nsfw"));
+
 
 const initializeSettingsAtom = atom(null, async(get, set)=>{
   const fileExists = await exists("settings.json", {
@@ -117,4 +121,4 @@ const resetSettingsAtom = atom(
   }
 );
 
-export {settingsAtom, initializeSettingsAtom, loadSettingsAtom, saveSettingsAtom, resetSettingsAtom};
+export {settingsAtom, showNsfwAtom, initializeSettingsAtom, loadSettingsAtom, saveSettingsAtom, resetSettingsAtom};
