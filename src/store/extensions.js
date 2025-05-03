@@ -2,79 +2,92 @@
 import { atom } from 'jotai';
 import { invoke } from "@tauri-apps/api/core";
 
-// Main extensions atom
-export const extensionsAtom = atom({
-  extensions: [],
-  last_updated: new Date().toISOString()
-});
+// Main extensions atom - initialize as an empty array
+export const extensionsAtom = atom([]);
+
+// Selected extension atom
+export const selectedExtensionAtom = atom(null);
 
 // Load extensions from backend
-export const loadExtensionsAtom = atom(null, async (get, set) => {
-  try {
-    const result = await invoke("get_all_extensions");
-    set(extensionsAtom, {
-      extensions: result.extensions || [],
-      last_updated: result.last_updated
-    });
-    return result.extensions || [];
-  } catch (error) {
-    console.error("Failed to load extensions:", error);
-    return [];
+export const loadExtensionsAtom = atom(
+  (get) => get(extensionsAtom),
+  async (get, set) => {
+    try {
+      // Call the Tauri backend to get extensions
+      const result = await invoke("get_all_extensions");
+
+      // Normalize result structure to ensure we always have an array
+      const extensionList = result?.extensions || [];
+
+      // Update the extensions atom with the fetched data
+      set(extensionsAtom, extensionList);
+
+      // Return the extensions for convenience
+      return extensionList;
+    } catch (error) {
+      console.error("Failed to load extensions:", error);
+      // On error, set an empty array to avoid null/undefined issues
+      set(extensionsAtom, []);
+      return [];
+    }
   }
-});
+);
 
 // Add extension atom
-export const addExtensionAtom = atom(null, async (get, set, extension) => {
-  try {
-    await invoke("add_extension", { extension });
-    // Reload extensions after adding
-    await get(loadExtensionsAtom)();
-    return true;
-  } catch (error) {
-    console.error("Failed to add extension:", error);
-    return false;
+export const addExtensionAtom = atom(
+  null,
+  async (get, set, extension) => {
+    try {
+      await invoke("add_extension", { extension });
+
+      // After adding, refresh the extension list
+      const currentExtensions = get(extensionsAtom) || [];
+      set(extensionsAtom, [...currentExtensions, extension]);
+
+      return true;
+    } catch (error) {
+      console.error("Failed to add extension:", error);
+      return false;
+    }
   }
-});
+);
 
 // Remove extension atom
-export const removeExtensionAtom = atom(null, async (get, set, extensionId) => {
-  try {
-    await invoke("remove_extension", { extensionId });
-    // Reload extensions after removing
-    await get(loadExtensionsAtom)();
-    return true;
-  } catch (error) {
-    console.error("Failed to remove extension:", error);
-    return false;
-  }
-});
+export const removeExtensionAtom = atom(
+  null,
+  async (get, set, extensionId) => {
+    try {
+      await invoke("remove_extension", { extensionId });
 
-// Validate extension file atom
-export const validateExtensionFileAtom = atom(null, async (get, set, path) => {
-  try {
-    return await invoke("validate_extension_file", { path });
-  } catch (error) {
-    console.error("Failed to validate extension file:", error);
-    throw error;
-  }
-});
+      // After removing, update the extension list
+      const currentExtensions = get(extensionsAtom) || [];
+      set(extensionsAtom, currentExtensions.filter(ext => ext.id !== extensionId));
 
-// Validate extension URL atom
-export const validateExtensionUrlAtom = atom(null, async (get, set, url) => {
-  try {
-    return await invoke("validate_extension_url", { url });
-  } catch (error) {
-    console.error("Failed to validate extension URL:", error);
-    throw error;
+      return true;
+    } catch (error) {
+      console.error("Failed to remove extension:", error);
+      return false;
+    }
   }
-});
+);
 
 // Initialize extensions atom
-export const initializeExtensionsAtom = atom(null, async (get, set) => {
-  try {
-    // Simply load extensions from backend
-    await get(loadExtensionsAtom)();
-  } catch (error) {
-    console.error("Failed to initialize extensions:", error);
+export const initializeExtensionsAtom = atom(
+  null,
+  async (get, set) => {
+    try {
+      // Simply call loadExtensionsAtom directly
+      const loadFunction = get(loadExtensionsAtom);
+      if (typeof loadFunction === 'function') {
+        await loadFunction();
+      } else {
+        // Fallback in case the getter is not callable
+        const result = await invoke("get_all_extensions");
+        set(extensionsAtom, result?.extensions || []);
+      }
+    } catch (error) {
+      console.error("Failed to initialize extensions:", error);
+      set(extensionsAtom, []);
+    }
   }
-});
+);
