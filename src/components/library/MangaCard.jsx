@@ -40,7 +40,8 @@ const MangaCard = ({manga}) => {
   const [, saveLibrary] = useAtom(saveLibraryAtom);
 
   const handleClick = (manga) => {
-    navigate('/reader', {state: {manga}});
+    // Navigate to Manga detail screen instead of directly to reader
+    navigate('/manga', {state: {manga}});
   };
 
   const handleValueChange = (setter, value) => {
@@ -54,6 +55,7 @@ const MangaCard = ({manga}) => {
     const finalList = mangaList.filter(m => m.id !== manga.id);
     setMangaList([...finalList, item]);
   }
+
   const onDeleteManga = () => {
     const items = mangaList.filter(m => m.id !== manga.id);
     setMangaList(items);
@@ -116,17 +118,19 @@ const MangaCard = ({manga}) => {
             handleClick(manga);
           }}
         >
-          <BookOpen className="mr-2 h-4 w-4"/>
-          <span>Read Now</span>
+          <Info className="mr-2 h-4 w-4"/>
+          <span>View Details</span>
         </ContextMenuItem>
 
         <ContextMenuItem
           onClick={(e) => {
             e.stopPropagation();
+            // Navigate directly to reader if needed
+            navigate('/reader', {state: {manga}});
           }}
         >
-          <Info className="mr-2 h-4 w-4"/>
-          <span>View Details</span>
+          <BookOpen className="mr-2 h-4 w-4"/>
+          <span>Read Now</span>
         </ContextMenuItem>
 
         <ContextMenuSeparator/>
@@ -155,29 +159,6 @@ const MangaCard = ({manga}) => {
         </ContextMenuSub>
 
         <ContextMenuSeparator/>
-
-        {/* Management Options */}
-        {/*<ContextMenuItem*/}
-        {/*  onClick={(e) => {*/}
-        {/*    e.stopPropagation();*/}
-        {/*    // onEdit?.(manga);*/}
-        {/*  }}*/}
-        {/*>*/}
-        {/*  <Pencil className="mr-2 h-4 w-4"/>*/}
-        {/*  <span>Edit</span>*/}
-        {/*</ContextMenuItem>*/}
-
-        {/*<ContextMenuItem*/}
-        {/*  onClick={(e) => {*/}
-        {/*    e.stopPropagation();*/}
-        {/*    onArchive?.(manga);*/}
-        {/*  }}*/}
-        {/*>*/}
-        {/*  <Archive className="mr-2 h-4 w-4"/>*/}
-        {/*  <span>Archive</span>*/}
-        {/*</ContextMenuItem>*/}
-
-        {/*<ContextMenuSeparator/>*/}
 
         {/* Danger Zone */}
         <ContextMenuItem

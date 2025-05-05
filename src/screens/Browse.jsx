@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
 import { useAtom } from 'jotai';
 import { extensionsAtom, selectedExtensionAtom, loadExtensionsAtom } from '@/store/extensions';
 import { showNsfwAtom } from '@/store/settings';
@@ -21,6 +22,8 @@ import MangaCard from '@/components/browse/MangaCard';
 import { useDebounce } from '@/hooks/useDebounce';
 
 function Browse() {
+  const navigate = useNavigate();
+
   // Get atoms with safe defaults
   const [extensions = [], setExtensions] = useAtom(extensionsAtom);
   const [selectedExtension, setSelectedExtension] = useAtom(selectedExtensionAtom);
@@ -280,6 +283,11 @@ function Browse() {
     // The useEffect will automatically trigger a re-fetch
   };
 
+  const handleMangaSelect = (manga) => {
+    // Navigate to Manga detail screen instead of directly to reader
+    navigate('/manga', { state: { manga } });
+  };
+
   // If no extensions are installed, show empty state
   if (extensionList.length === 0) {
     return <ExtensionEmptyState />;
@@ -289,25 +297,25 @@ function Browse() {
     <div className="flex flex-1 flex-col h-full">
       {/* Search and filters section */}
       <div className="flex flex-row gap-4 p-4 border-b">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search manga..."
-              value={searchQuery}
-              onChange={handleSearchChange}
-              className="pl-9 w-full"
-            />
-          </div>
-          <Button
-            variant="outline"
-            size="icon"
-            title="Filter"
-          >
-            <Filter className="h-4 w-4" />
-          </Button>
-          <div>
-            <ExtensionSelector />
-          </div>
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search manga..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            className="pl-9 w-full"
+          />
+        </div>
+        <Button
+          variant="outline"
+          size="icon"
+          title="Filter"
+        >
+          <Filter className="h-4 w-4" />
+        </Button>
+        <div>
+          <ExtensionSelector />
+        </div>
       </div>
 
       {/* Main content area */}
@@ -363,10 +371,11 @@ function Browse() {
     // Render manga grid
     return (
       <div className="flex flex-wrap justify-around gap-2">
-        {manga.map(item => (
-          < MangaCard
+        {manga.map((item) => (
+          <MangaCard
             key={item.id}
             manga={item}
+            onClick={() => handleMangaSelect(item)}
           />
         ))}
       </div>

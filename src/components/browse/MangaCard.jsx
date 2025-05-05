@@ -37,14 +37,13 @@ const MangaCard = ({ manga }) => {
   // Handle clicking on the card to view details
   const handleViewDetails = () => {
     // Navigate to manga details page with the manga data
-    navigate('/manga/details', { state: { manga } });
+    navigate('/manga', { state: { manga } });
   };
 
   // Handle reading the manga
   const handleReadNow = () => {
-    // This would navigate to the reader with the first chapter
-    console.log('Read manga:', manga);
-    // Example: navigate('/reader', { state: { manga, chapter: firstChapter } });
+    // Navigate directly to reader
+    navigate('/reader', { state: { manga } });
   };
 
   // Add manga to library with specified category
