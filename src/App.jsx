@@ -6,7 +6,7 @@ import Browse from "@/screens/Browse.jsx";
 import History from "@/screens/History.jsx";
 import Settings from "@/screens/Settings.jsx";
 import Reader from "@/screens/Reader.jsx";
-import Manga from "@/screens/Manga.jsx"; // Import the new Manga screen
+import Manga from "@/screens/MangaDetails.jsx"; // Import the new Manga screen
 import Base from "@/components/base/Base.jsx";
 
 

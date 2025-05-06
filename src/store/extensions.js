@@ -33,44 +33,6 @@ export const loadExtensionsAtom = atom(
   }
 );
 
-// Add extension atom
-export const addExtensionAtom = atom(
-  null,
-  async (get, set, extension) => {
-    try {
-      await invoke("add_extension", { extension });
-
-      // After adding, refresh the extension list
-      const currentExtensions = get(extensionsAtom) || [];
-      set(extensionsAtom, [...currentExtensions, extension]);
-
-      return true;
-    } catch (error) {
-      console.error("Failed to add extension:", error);
-      return false;
-    }
-  }
-);
-
-// Remove extension atom
-export const removeExtensionAtom = atom(
-  null,
-  async (get, set, extensionId) => {
-    try {
-      await invoke("remove_extension", { extensionId });
-
-      // After removing, update the extension list
-      const currentExtensions = get(extensionsAtom) || [];
-      set(extensionsAtom, currentExtensions.filter(ext => ext.id !== extensionId));
-
-      return true;
-    } catch (error) {
-      console.error("Failed to remove extension:", error);
-      return false;
-    }
-  }
-);
-
 // Initialize extensions atom
 export const initializeExtensionsAtom = atom(
   null,

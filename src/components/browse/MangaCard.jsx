@@ -5,13 +5,15 @@ import {
   BookPlus,
   FolderPlus,
   Info,
-  ExternalLink
+  ExternalLink,
+  Star
 } from 'lucide-react';
 import { useAtom, useAtomValue } from "jotai";
 import { focusAtom } from "jotai-optics";
 import { settingsAtom } from "@/store/settings.js";
 import { libraryAtom, saveLibraryAtom } from "@/store/library.js";
 import { nanoid } from 'nanoid';
+import { cn } from "@/lib/utils";
 
 // Import ShadCN UI components
 import {
@@ -24,34 +26,59 @@ import {
   ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { Badge } from "@/components/ui/badge";
 
 const categoriesAtom = focusAtom(settingsAtom, optic => optic.prop("categories"));
 const mangaListAtom = focusAtom(libraryAtom, optic => optic.prop("manga"));
 
-const MangaCard = ({ manga }) => {
+/**
+ * MangaCard component displays a manga item with cover, title and context menu
+ *
+ * @param {Object} props
+ * @param {Object} props.manga - Manga data object
+ * @param {Function} props.onClick - Optional click handler for the card
+ * @param {string} props.className - Optional class names
+ * @returns {JSX.Element}
+ */
+const MangaCard = ({ manga, onClick, className }) => {
   const navigate = useNavigate();
   const categories = useAtomValue(categoriesAtom);
   const [mangaList, setMangaList] = useAtom(mangaListAtom);
   const [, saveLibrary] = useAtom(saveLibraryAtom);
 
-  // Handle clicking on the card to view details
+  // Check if manga is already in library
+  const isInLibrary = mangaList.some(m =>
+    (m.sourceId === manga.id && m.source === manga.source_id) ||
+    (m.title === manga.title && m.source === manga.source_id)
+  );
+
+  // Handle viewing manga details
   const handleViewDetails = () => {
-    // Navigate to manga details page with the manga data
-    navigate('/manga', { state: { manga } });
+    if (onClick) {
+      onClick(manga);
+    } else {
+      // Default navigation
+      navigate('/manga/', { state: { manga } });
+    }
   };
 
   // Handle reading the manga
   const handleReadNow = () => {
-    // Navigate directly to reader
-    navigate('/reader', { state: { manga } });
+    // Navigate to reader with the first chapter if available
+    if (manga.firstChapter) {
+      navigate('/reader', { state: { manga, chapter: manga.firstChapter } });
+    } else {
+      // If no chapter info, just show details
+      handleViewDetails();
+    }
   };
 
   // Add manga to library with specified category
   const addToLibrary = (categoryId) => {
     // Check if manga already exists in library
     const existingManga = mangaList.find(m =>
-      (m.sourceId === manga.id && m.source === manga.source) ||
-      (m.title === manga.title && m.source === manga.source)
+      (m.sourceId === manga.id && m.source === manga.source_id) ||
+      (m.title === manga.title && m.source === manga.source_id)
     );
 
     if (existingManga) {
@@ -65,18 +92,15 @@ const MangaCard = ({ manga }) => {
     } else {
       // Create a new manga entry for the library
       const newManga = {
-        id: nanoid(),
+        id: manga.id,
         title: manga.title,
-        cover: manga.cover || '', // Local path for downloaded cover
-        coverUrl: manga.coverUrl || '', // URL for extension manga
-        source: manga.source,
+        cover: manga.cover,
         category: categoryId,
         progress: 0,
         lastRead: null,
         path: manga.path || '',
-        sourceId: manga.id,
-        mangaId: manga.mangaId || manga.id, // Crucial for MangaDex
-        coverFileName: manga.coverFileName || '', // Store the cover filename for MangaDex
+        source_id: manga.source_id,
+        description: manga.description,
         createdAt: new Date().toISOString()
       };
 
@@ -87,38 +111,10 @@ const MangaCard = ({ manga }) => {
     setTimeout(() => saveLibrary(), 0);
   };
 
-  // Handle getting cover image from different sources
+  // Handle getting cover image based on source
   const getCoverImage = () => {
-    // For MangaDex format
-    if (manga.source === 'mangadex') {
-      // If we have the manga ID and cover filename directly
-      if (manga.mangaId && manga.coverFileName) {
-        return `https://uploads.mangadex.org/covers/${manga.mangaId}/${manga.coverFileName}.512.jpg`;
-      }
-
-      // If the cover is in relationships array (from MangaDex API)
-      if (manga.relationships && Array.isArray(manga.relationships)) {
-        const coverArt = manga.relationships.find(rel => rel.type === 'cover_art');
-        if (coverArt && coverArt.attributes && coverArt.attributes.fileName) {
-          return `https://uploads.mangadex.org/covers/${manga.id}/${coverArt.attributes.fileName}.512.jpg`;
-        }
-      }
-
-      // If the manga id is stored in a different property
-      const id = manga.mangaId || manga.id;
-      if (id && manga.coverFileName) {
-        return `https://uploads.mangadex.org/covers/${id}/${manga.coverFileName}.512.jpg`;
-      }
-    }
-
-    // If the manga has a direct coverUrl, use that
-    if (manga.coverUrl) {
-      return manga.coverUrl;
-    }
-
-    // If the manga has a base URL and filename
-    if (manga.baseUrl && manga.cover) {
-      return `${manga.baseUrl}/${manga.cover}`;
+    if (manga.cover) {
+      return manga.cover;
     }
 
     // Default placeholder
@@ -129,25 +125,23 @@ const MangaCard = ({ manga }) => {
     <ContextMenu>
       <ContextMenuTrigger>
         <div
-          className="group relative rounded-md shadow-sm overflow-hidden transition-all hover:shadow-md bg-card text-card-foreground cursor-pointer"
-          style={{ width: '200px' }}
+          className={cn(
+            "group relative rounded-lg shadow-sm overflow-hidden transition-all hover:shadow-md bg-card text-card-foreground cursor-pointer h-full",
+            className
+          )}
           onClick={handleViewDetails}
         >
           {/* Cover Image */}
-          <div className="relative overflow-hidden" style={{ height: '280px' }}>
+          <div className="relative overflow-hidden aspect-[2/3]">
             <img
               src={getCoverImage()}
               alt={manga.title}
               className="w-full h-full object-cover transition-transform group-hover:scale-105"
               onError={(e) => {
                 e.target.onerror = null;
-                // Try the smaller thumbnail if the large one fails
+                // Try a smaller thumbnail if the large one fails
                 if (e.target.src.includes('.512.jpg')) {
                   e.target.src = e.target.src.replace('.512.jpg', '.256.jpg');
-                } else if (manga.source === 'mangadex' && (manga.mangaId || manga.id) && manga.coverFileName) {
-                  // Try the original image if both thumbnails fail
-                  const id = manga.mangaId || manga.id;
-                  e.target.src = `https://uploads.mangadex.org/covers/${id}/${manga.coverFileName}`;
                 } else {
                   // Final fallback
                   e.target.src = 'https://placehold.co/200x280?text=No+Cover';
@@ -156,9 +150,29 @@ const MangaCard = ({ manga }) => {
             />
 
             {/* Source badge */}
-            {manga.source && (
-              <div className="absolute top-2 left-2 bg-primary/80 text-primary-foreground text-xs px-2 py-0.5 rounded-sm">
-                {manga.source === 'mangadex' ? 'MangaDex' : manga.source}
+            <div className="absolute top-2 left-2 flex gap-1">
+              <Badge variant="primary" className="text-[10px] px-1.5 py-0 font-normal">
+                {manga.source_id === 'mangadex' ? 'MangaDex' : manga.source_id}
+              </Badge>
+
+              {/* Show in library badge if applicable */}
+              {isInLibrary && (
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal">
+                  <Star className="w-3 h-3 mr-0.5" />
+                  Library
+                </Badge>
+              )}
+            </div>
+
+            {/* Content rating badge if not safe */}
+            {manga.contentRating && manga.contentRating !== 'safe' && (
+              <div className="absolute top-2 right-2">
+                <Badge
+                  variant={manga.contentRating === 'pornographic' ? 'destructive' : 'outline'}
+                  className="text-[10px] px-1.5 py-0 font-normal capitalize"
+                >
+                  {manga.contentRating}
+                </Badge>
               </div>
             )}
 
@@ -170,8 +184,28 @@ const MangaCard = ({ manga }) => {
               <h3 className="text-white font-medium text-sm line-clamp-2">{manga.title}</h3>
             </div>
 
-            {/* Hover overlay effect */}
-            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+            {/* Hover overlay with quick actions */}
+            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+              <button
+                onClick={(e) => { e.stopPropagation(); handleReadNow(); }}
+                className="bg-primary text-primary-foreground p-2 rounded-full hover:bg-primary/90 transition-colors"
+                title="Read Now"
+              >
+                <BookOpen className="w-5 h-5" />
+              </button>
+
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Add to first category by default
+                  addToLibrary(categories[0]?.id || "default");
+                }}
+                className="bg-primary text-primary-foreground p-2 rounded-full hover:bg-primary/90 transition-colors"
+                title={isInLibrary ? "Update in Library" : "Add to Library"}
+              >
+                <BookPlus className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
       </ContextMenuTrigger>
@@ -182,13 +216,18 @@ const MangaCard = ({ manga }) => {
           <span>View Details</span>
         </ContextMenuItem>
 
+        <ContextMenuItem onClick={handleReadNow}>
+          <BookOpen className="mr-2 h-4 w-4" />
+          <span>Read Now</span>
+        </ContextMenuItem>
+
         <ContextMenuSeparator />
 
         {/* Add to Library Submenu */}
         <ContextMenuSub>
           <ContextMenuSubTrigger>
             <BookPlus className="mr-2 h-4 w-4" />
-            <span>Add to Library</span>
+            <span>{isInLibrary ? "Update in Library" : "Add to Library"}</span>
           </ContextMenuSubTrigger>
           <ContextMenuSubContent className="w-48">
             {categories.map(category => (
@@ -209,14 +248,8 @@ const MangaCard = ({ manga }) => {
 
         <ContextMenuSeparator />
 
-        {/* Read Now - This would take them directly to the reader */}
-        <ContextMenuItem onClick={handleReadNow}>
-          <BookOpen className="mr-2 h-4 w-4" />
-          <span>Read Now</span>
-        </ContextMenuItem>
-
         {/* External Link - If the manga has a source URL */}
-        {manga.source === 'mangadex' && manga.id && (
+        {manga.source_id === 'mangadex' && manga.id && (
           <ContextMenuItem
             onClick={() => window.open(`https://mangadex.org/title/${manga.id}`, '_blank')}
           >
