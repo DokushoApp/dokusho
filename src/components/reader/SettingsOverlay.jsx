@@ -2,14 +2,15 @@ import React from "react";
 import {useAtom} from "jotai";
 import {focusAtom} from "jotai-optics";
 import {RotateCcw, X, Minus, Plus} from 'lucide-react';
-import {saveSettingsAtom, settingsAtom} from "@/store/settings.js";
+import {
+  readerPageLayoutAtom,
+  readerZoomAtom,
+  readingModeAtom,
+  saveSettingsAtom,
+  settingsAtom
+} from "@/store/settings.js";
 import {cn} from "@/lib/utils.js";
 import {Button} from "@/components/ui/button.jsx";
-
-const readingModeAtom = focusAtom(settingsAtom, optic => optic.prop("reading_mode"));
-const readerPageLayoutAtom = focusAtom(settingsAtom, optic => optic.prop("reading_page_layout"));
-const readerZoomAtom = focusAtom(settingsAtom, optic => optic.prop("reader_zoom"));
-
 
 const SettingsOverlay = ({handleClose}) => {
   const [readingMode, setReadingMode] = useAtom(readingModeAtom);
@@ -40,7 +41,7 @@ const SettingsOverlay = ({handleClose}) => {
           <label className="block text-sm text-muted-foreground">Reading Mode</label>
           <div className="grid grid-cols-3 gap-1">
             <button
-              onClick={() => setReadingMode('left-to-right')}
+              onClick={() => handleValueChange(setReadingMode, 'left-to-right')}
               className={cn(
                 "px-2 py-1.5 text-xs rounded",
                 readingMode === 'left-to-right'
