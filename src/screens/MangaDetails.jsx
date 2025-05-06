@@ -34,6 +34,7 @@ import {
 import {mangaListAtom} from "@/store/library.js";
 import {categoriesAtom} from "@/store/settings.js"
 import {useMangaLibrary} from "@/hooks/useMangaLibrary.js";
+import {convertFileSrc} from "@tauri-apps/api/core";
 
 /**
  * Manga details page component
@@ -127,7 +128,7 @@ const MangaDetails = () => {
           <div className="relative overflow-hidden rounded-lg shadow-md"
                style={{width: '280px', maxWidth: '100%'}}>
             <img
-              src={manga.cover}
+              src={manga.source_id === "local" ? convertFileSrc(manga.cover) : manga.cover}
               alt={manga.title}
               className="w-full object-cover"
               style={{aspectRatio: '2/3'}}
