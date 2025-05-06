@@ -15,7 +15,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import DraggableMenuBar from "@/components/library/DraggableMenuBar";
-import MangaCard from "@/components/library/MangaCard.jsx";
+import MangaCard from "@/components/base/MangaCard.jsx";
 
 // Settings Jotai Atoms for categories
 const categoriesAtom = focusAtom(settingsAtom, optic => optic.prop("categories"));
@@ -134,6 +134,7 @@ function Library() {
               <MangaCard
                 key={manga.id}
                 manga={manga}
+                library={true}
               />
             ))}
           </div>

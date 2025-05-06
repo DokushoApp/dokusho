@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
-import { useAtom, useAtomValue } from 'jotai';
-import { extensionsAtom, selectedExtensionAtom, loadExtensionsAtom } from '@/store/extensions';
+import { useAtom } from 'jotai';
+import { selectedExtensionAtom, loadExtensionsAtom } from '@/store/extensions';
 import { Search, Filter, AlertCircle, RefreshCw } from 'lucide-react';
 import { useDebounce } from '@uidotdev/usehooks';
 
@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 // Custom Components
 import ExtensionSelector from '@/components/browse/ExtensionSelector';
 import ExtensionEmptyState from '@/components/browse/ExtensionEmptyState';
-import MangaCard from '@/components/browse/MangaCard';
+import MangaCard from '@/components/base/MangaCard';
 
 // Custom Hooks
 import useFetchManga from '@/hooks/useFetchManga';
@@ -71,11 +71,6 @@ function Browse() {
   const handleSearchChange = useCallback((e) => {
     setSearchQuery(e.target.value);
   }, []);
-
-  // Handle manga selection
-  const handleMangaSelect = useCallback((manga) => {
-    navigate('/manga', { state: { manga } });
-  }, [navigate]);
 
   // If no extensions are installed, show empty state
   if (extensionList.length === 0) {
@@ -154,12 +149,12 @@ function Browse() {
 
     // Render manga grid
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+      <div className="flex flex-wrap gap-3">
         {manga.map(item => (
           <MangaCard
             key={item.id}
             manga={item}
-            onClick={() => handleMangaSelect(item)}
+            isLibrary={false}
           />
         ))}
       </div>
