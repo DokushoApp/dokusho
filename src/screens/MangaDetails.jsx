@@ -168,7 +168,7 @@ const MangaDetails = () => {
                 <DropdownMenuContent>
                   {categories.map(category => (
                     <DropdownMenuItem key={category.id} value={category.id} className={'w-full'}
-                                      onClick={async () => await addMangaToLibrary(mangaList, category.id)}>
+                                      onClick={async () => await addMangaToLibrary(manga, category.id)}>
                       {category.name}
                     </DropdownMenuItem>
                   ))}
