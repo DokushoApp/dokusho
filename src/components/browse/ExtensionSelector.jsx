@@ -1,5 +1,6 @@
 import React from 'react';
-import {useAtom} from 'jotai';
+import { useAtom } from 'jotai';
+import { extensionsAtom, selectedExtensionAtom } from '@/store/extensions';
 import {
   Select,
   SelectContent,
@@ -7,10 +8,13 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import {extensionsAtom, selectedExtensionAtom} from '@/store/extensions';
-import {Badge} from '@/components/ui/badge';
-import {Puzzle} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Puzzle } from 'lucide-react';
 
+/**
+ * ExtensionSelector component
+ * Displays a dropdown to select the manga source/extension
+ */
 const ExtensionSelector = () => {
   const [extensions = [], setExtensions] = useAtom(extensionsAtom);
   const [selectedExtension, setSelectedExtension] = useAtom(selectedExtensionAtom);
@@ -23,7 +27,7 @@ const ExtensionSelector = () => {
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground p-2 border rounded-md">
         <Puzzle className="h-4 w-4"/>
-        <span>No extensions installed</span>
+        <span>No extensions</span>
       </div>
     );
   }
@@ -35,22 +39,21 @@ const ExtensionSelector = () => {
         if (value) setSelectedExtension(value);
       }}
     >
-      <SelectTrigger className="w-full">
-        <SelectValue placeholder="Select a source">
+      <SelectTrigger className="w-full min-w-[150px]">
+        <SelectValue placeholder="Select source">
           {selectedExtension ?
-            extensionList.find(ext => ext?.id === selectedExtension)?.name || 'Select a source' :
-            'Select a source'
-          }
+            extensionList.find(ext => ext?.id === selectedExtension)?.name || 'Select source' :
+            'Select source'}
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
         {extensionList.map((extension) => (
           <SelectItem
-            key={extension.id || Math.random().toString()}
+            key={extension.id || Math.random().toString(36).substring(2, 9)}
             value={extension.id || ''}
           >
             <div className="flex items-center justify-between w-full">
-              <span>{extension.name || 'Unknown Extension'}</span>
+              <span className="flex-1">{extension.name || 'Unknown'}</span>
               {extension.nsfw && (
                 <Badge variant="destructive" className="text-xs ml-2">
                   NSFW

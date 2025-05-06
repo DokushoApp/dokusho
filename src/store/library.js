@@ -1,6 +1,7 @@
 import {exists, readTextFile, writeTextFile} from "@tauri-apps/plugin-fs";
 import {BaseDirectory} from "@tauri-apps/api/path";
 import {atom} from "jotai";
+import {focusAtom} from "jotai-optics";
 
 const defaultLibrary = {
   manga: [],
@@ -8,6 +9,7 @@ const defaultLibrary = {
   updatedAt: Date.now()
 }
 const libraryAtom = atom(defaultLibrary);
+const mangaListAtom = focusAtom(libraryAtom, optic=> optic.prop("manga"));
 
 const initializeLibraryAtom = atom(null, async (get, set) => {
   const fileExists = await exists("library.json", {
@@ -41,4 +43,4 @@ const saveLibraryAtom = atom(null, async (get, set) => {
   });
 })
 
-export {libraryAtom, initializeLibraryAtom,loadLibraryAtom, saveLibraryAtom};
+export {libraryAtom, mangaListAtom,initializeLibraryAtom,loadLibraryAtom, saveLibraryAtom};

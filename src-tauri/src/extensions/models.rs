@@ -27,6 +27,7 @@ pub struct ExtensionApi {
     pub manga_details: ApiEndpoint,
     pub chapter_list: ApiEndpoint,
     pub page_list: ApiEndpoint,
+    pub cover_art: ApiEndpoint,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

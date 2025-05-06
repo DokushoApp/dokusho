@@ -28,7 +28,7 @@ export const defaultSettings = {
 
 const settingsAtom = atom(defaultSettings);
 const showNsfwAtom = focusAtom(settingsAtom, optic => optic.prop("show_nsfw"));
-
+const categoriesAtom = focusAtom(settingsAtom, optic => optic.prop("categories"));
 
 const initializeSettingsAtom = atom(null, async(get, set)=>{
   const fileExists = await exists("settings.json", {
@@ -121,4 +121,4 @@ const resetSettingsAtom = atom(
   }
 );
 
-export {settingsAtom, showNsfwAtom, initializeSettingsAtom, loadSettingsAtom, saveSettingsAtom, resetSettingsAtom};
+export {settingsAtom, categoriesAtom,showNsfwAtom, initializeSettingsAtom, loadSettingsAtom, saveSettingsAtom, resetSettingsAtom};
