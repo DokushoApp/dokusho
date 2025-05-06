@@ -27,7 +27,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import {Badge} from "@/components/ui/badge";
-import {invoke} from "@tauri-apps/api/core";
+import {convertFileSrc, invoke} from "@tauri-apps/api/core";
 
 const categoriesAtom = focusAtom(settingsAtom, optic => optic.prop("categories"));
 const mangaListAtom = focusAtom(libraryAtom, optic => optic.prop("manga"));
@@ -126,7 +126,9 @@ const MangaCard = ({manga, onClick, isLibrary}) => {
 
   // Handle getting cover image based on source
   const getCoverImage = () => {
-    if (manga.cover) {
+    if (manga.source_id === "local") {
+      return convertFileSrc(manga.cover)
+    } else {
       return manga.cover;
     }
 
