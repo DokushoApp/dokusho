@@ -80,7 +80,7 @@ function Browse() {
   return (
     <div className="flex flex-1 flex-col h-full">
       {/* Search and filters section */}
-      <div className="flex flex-col gap-4 p-4 border-b">
+      <div className="flex flex-col gap-4 py-4">
         <div className="flex flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -105,7 +105,7 @@ function Browse() {
       </div>
 
       {/* Main content area */}
-      <div className="flex-1 overflow-auto no-scrollbar p-4">
+      <div className="flex-1 overflow-auto no-scrollbar py-2">
         {renderContent()}
       </div>
     </div>

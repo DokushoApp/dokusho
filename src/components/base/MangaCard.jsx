@@ -10,8 +10,8 @@ import {
 } from 'lucide-react';
 import {useAtom, useAtomValue} from "jotai";
 import {focusAtom} from "jotai-optics";
-import {settingsAtom} from "@/store/settings.js";
-import {libraryAtom, saveLibraryAtom} from "@/store/library.js";
+import {categoriesAtom, settingsAtom} from "@/store/settings.js";
+import {libraryAtom, mangaListAtom, saveLibraryAtom} from "@/store/library.js";
 import {nanoid} from 'nanoid';
 import {cn} from "@/lib/utils";
 
@@ -28,9 +28,11 @@ import {
 } from "@/components/ui/context-menu";
 import {Badge} from "@/components/ui/badge";
 import {convertFileSrc, invoke} from "@tauri-apps/api/core";
+import {
+  isInLibrary,
+  useMangaLibrary,
+} from "@/hooks/useMangaLibrary.js";
 
-const categoriesAtom = focusAtom(settingsAtom, optic => optic.prop("categories"));
-const mangaListAtom = focusAtom(libraryAtom, optic => optic.prop("manga"));
 
 /**
  * MangaCard component displays a manga item with cover, title and context menu
@@ -44,13 +46,16 @@ const mangaListAtom = focusAtom(libraryAtom, optic => optic.prop("manga"));
 const MangaCard = ({manga, onClick, isLibrary}) => {
   const navigate = useNavigate();
   const categories = useAtomValue(categoriesAtom);
-  const [mangaList, setMangaList] = useAtom(mangaListAtom);
-  const [, saveLibrary] = useAtom(saveLibraryAtom);
+  const mangaList = useAtomValue(mangaListAtom);
+
+  const {
+    addMangaToLibrary,
+    updateMangaCategory,
+    deleteMangaFromLibrary
+  } = useMangaLibrary();
 
   // Check if manga is already in library
-  const isInLibrary = mangaList.some(m =>
-    (m.id === manga.id && m.source_id === manga.source_id)
-  );
+  const inLibrary = isInLibrary(mangaList, manga);
 
   // Handle viewing manga details
   const handleViewDetails = () => {
@@ -72,57 +77,6 @@ const MangaCard = ({manga, onClick, isLibrary}) => {
       handleViewDetails();
     }
   };
-
-  // Add manga to library with specified category
-  const onAddToLibrary = (categoryId) => {
-    const existingManga = mangaList.find(m =>
-      (m.sourceId === manga.id && m.source === manga.source_id) ||
-      (m.title === manga.title && m.source === manga.source_id)
-    );
-
-    if (existingManga) {
-      // If already exists, just update category
-      const updatedList = mangaList.map(m =>
-        (m.id === existingManga.id)
-          ? {...m, category: categoryId}
-          : m
-      );
-      setMangaList(updatedList);
-    } else {
-      // Create a new manga entry for the library
-      const newManga = {
-        id: manga.id,
-        title: manga.title,
-        cover: manga.cover,
-        category: categoryId,
-        progress: 0,
-        lastRead: null,
-        path: manga.path || '',
-        source_id: manga.source_id,
-        description: manga.description,
-        createdAt: new Date().toISOString()
-      };
-
-      setMangaList([...mangaList, newManga]);
-    }
-  };
-  const handleValueChange = (setter, value) => {
-    setter(value);
-    setTimeout(() => saveLibrary(), 0);
-  };
-
-  const onChangeCategory = (categoryId) => {
-    const item = mangaList.filter(m => m.id === manga.id)[0];
-    item.category = categoryId;
-    const finalList = mangaList.filter(m => m.id !== manga.id);
-    setMangaList([...finalList, item]);
-  }
-
-  const onDeleteManga = () => {
-    const items = mangaList.filter(m => m.id !== manga.id);
-    setMangaList(items);
-    setTimeout(() => invoke("delete_manga", {path: manga.path}), 0)
-  }
 
   // Handle getting cover image based on source
   const getCoverImage = () => {
@@ -165,12 +119,13 @@ const MangaCard = ({manga, onClick, isLibrary}) => {
 
             {/* Source badge */}
             <div className="absolute top-2 left-2 flex gap-1">
-              <Badge variant="primary" className="text-[10px] px-1.5 py-0 font-normal">
-                {manga.source_id}
-              </Badge>
+              {isLibrary && (
+                <Badge variant="primary" className="text-xs px-1.5 py-0 font-normal bg-background text-foreground">
+                  {manga.source_id}
+                </Badge>
+              )}
 
-              {/* Show in library badge if applicable */}
-              {!!isLibrary && isInLibrary && (
+              {!isLibrary && inLibrary && (
                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal">
                   <Star className="w-3 h-3 mr-0.5"/>
                   Library
@@ -187,7 +142,7 @@ const MangaCard = ({manga, onClick, isLibrary}) => {
             </div>
 
             {/* Hover overlay with quick actions */}
-            {!!isLibrary && (
+            {!isLibrary && (
               <div
                 className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                 <button
@@ -202,10 +157,7 @@ const MangaCard = ({manga, onClick, isLibrary}) => {
                 </button>
 
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleValueChange(onAddToLibrary, categories[0]?.id || "default")
-                  }}
+                  onClick={async () => await addMangaToLibrary(manga, categories[0]?.id)}
                   className="bg-primary text-primary-foreground p-2 rounded-full hover:bg-primary/90 transition-colors"
                   title={"Add to Library"}
                 >
@@ -234,17 +186,17 @@ const MangaCard = ({manga, onClick, isLibrary}) => {
         <ContextMenuSub>
           <ContextMenuSubTrigger>
             <BookPlus className="mr-2 h-4 w-4"/>
-            <span>{isInLibrary ? "Update Category" : "Add to Library"}</span>
+            <span>{inLibrary ? "Update Category" : "Add to Library"}</span>
           </ContextMenuSubTrigger>
           <ContextMenuSubContent className="w-48">
             {categories.map(category => (
               <ContextMenuItem
                 key={category.id}
-                onClick={() => {
-                  if (isInLibrary) {
-                    handleValueChange(onChangeCategory, category.id)
+                onClick={async () => {
+                  if (inLibrary) {
+                    await addMangaToLibrary(manga, category.id);
                   } else {
-                    handleValueChange(onAddToLibrary, category.id);
+                    await updateMangaCategory(manga, category.id);
                   }
                 }}
               >
@@ -253,15 +205,12 @@ const MangaCard = ({manga, onClick, isLibrary}) => {
             ))}
           </ContextMenuSubContent>
         </ContextMenuSub>
-        {isInLibrary && (
+        {inLibrary && (
           <>
             <ContextMenuSeparator/>
             {/* Danger Zone */}
             <ContextMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                handleValueChange(onDeleteManga);
-              }}
+              onClick={async () => await deleteMangaFromLibrary(manga)}
               className="text-destructive focus:text-destructive focus:bg-destructive/10"
             >
               <Trash className="mr-2 h-4 w-4"/>

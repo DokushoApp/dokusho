@@ -134,7 +134,7 @@ function Library() {
               <MangaCard
                 key={manga.id}
                 manga={manga}
-                library={true}
+                isLibrary={true}
               />
             ))}
           </div>

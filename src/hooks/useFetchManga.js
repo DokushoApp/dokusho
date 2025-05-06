@@ -46,8 +46,9 @@ const useFetchManga = (query = '', endpoint = 'search', customParams = {}) => {
 
     if (responseData.data && Array.isArray(responseData.data)) {
       processedItems = responseData.data.map(item => {
-        // Important: Use the original mangaId from the source
-        const mangaId = item.id || '';
+
+        // Create ID - use mangaId if it exists, otherwise generate one
+        const id = item.id ? item.id : nanoid();
 
         // Process title
         let title = 'Unknown';
@@ -72,7 +73,7 @@ const useFetchManga = (query = '', endpoint = 'search', customParams = {}) => {
           if (coverRel && coverRel.attributes && coverRel.attributes.fileName) {
             if (extension.api?.cover_art && extension.api.cover_art.url) {
               cover = extension.api.cover_art.url
-                .replace('{id}', mangaId)
+                .replace('{id}', item.id)
                 .replace('{filename}', coverRel.attributes.fileName)
                 .replace('{size}', '512');
             }
@@ -88,8 +89,6 @@ const useFetchManga = (query = '', endpoint = 'search', customParams = {}) => {
           (item.attributes?.description ? Object.values(item.attributes.description)[0] : '') ||
           item.description || '';
 
-        // Create ID - use mangaId if it exists, otherwise generate one
-        const id = mangaId ? mangaId : nanoid();
 
         return {
           id, // Use source ID directly when available
