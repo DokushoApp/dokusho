@@ -26,11 +26,16 @@ export const defaultSettings = {
 };
 
 
-const settingsAtom = atom(defaultSettings);
-const showNsfwAtom = focusAtom(settingsAtom, optic => optic.prop("show_nsfw"));
-const categoriesAtom = focusAtom(settingsAtom, optic => optic.prop("categories"));
+export const settingsAtom = atom(defaultSettings);
+export const showNsfwAtom = focusAtom(settingsAtom, optic => optic.prop("show_nsfw"));
+export const categoriesAtom = focusAtom(settingsAtom, optic => optic.prop("categories"));
+export const readingModeAtom = focusAtom(settingsAtom, optic => optic.prop("reading_mode"));
+export const readerPageLayoutAtom = focusAtom(settingsAtom, optic => optic.prop("reading_page_layout"));
+export const readerZoomAtom = focusAtom(settingsAtom, optic => optic.prop("reader_zoom"));
 
-const initializeSettingsAtom = atom(null, async(get, set)=>{
+
+
+export const initializeSettingsAtom = atom(null, async(get, set)=>{
   const fileExists = await exists("settings.json", {
     baseDir: BaseDirectory.AppData,
   });
@@ -62,7 +67,7 @@ const initializeSettingsAtom = atom(null, async(get, set)=>{
   }
 })
 
-const loadSettingsAtom = atom(
+export const loadSettingsAtom = atom(
   null,
   async (get, set) => {
     try {
@@ -87,7 +92,7 @@ const loadSettingsAtom = atom(
 );
 
 // Atom to save settings to storage
-const saveSettingsAtom = atom(
+export const saveSettingsAtom = atom(
   null,
   async (get, set) => {
     try {
@@ -104,7 +109,7 @@ const saveSettingsAtom = atom(
 );
 
 // Function to reset all settings to defaults
-const resetSettingsAtom = atom(
+export const resetSettingsAtom = atom(
   null,
   async (get, set) => {
     try {
@@ -120,5 +125,3 @@ const resetSettingsAtom = atom(
     }
   }
 );
-
-export {settingsAtom, categoriesAtom,showNsfwAtom, initializeSettingsAtom, loadSettingsAtom, saveSettingsAtom, resetSettingsAtom};
