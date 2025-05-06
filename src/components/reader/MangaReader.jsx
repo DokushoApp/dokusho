@@ -1,20 +1,17 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { X, Settings, HelpCircle } from 'lucide-react';
-import {atom, useAtom, useAtomValue} from 'jotai';
-import { cn } from '@/lib/utils';
+import React, {useState, useRef, useEffect} from 'react';
+import {X, Settings, HelpCircle} from 'lucide-react';
+import {useAtom} from 'jotai';
+import {cn} from '@/lib/utils';
 import HelpOverlay from "@/components/reader/HelpOverlay.jsx";
 import SettingsOverlay from "@/components/reader/SettingsOverlay.jsx";
 import {Button} from "@/components/ui/button.jsx";
-import {settingsAtom} from "@/store/settings.js";
+import {readerPageLayoutAtom, readerZoomAtom, readingModeAtom} from "@/store/settings.js";
 import {useNavigate} from "react-router";
-import {focusAtom} from "jotai-optics";
-
-const readingModeAtom = focusAtom(settingsAtom, optic => optic.prop("reading_mode"));
-const readerPageLayoutAtom = focusAtom(settingsAtom, optic => optic.prop("reading_page_layout"));
-const readerZoomAtom = focusAtom(settingsAtom, optic => optic.prop("reader_zoom"));
+import {convertFileSrc} from "@tauri-apps/api/core";
 
 const MangaReader = ({
-                       pages = [],
+                       pages,
+                       manga,
                        initialPage = 0,
                        chapterTitle = ""
                      }) => {
@@ -23,8 +20,6 @@ const MangaReader = ({
   const [readerPageLayout, setReaderPageLayout] = useAtom(readerPageLayoutAtom);
   const [readerZoom, setReaderZoom] = useAtom(readerZoomAtom);
 
-
-  // const [settings, setSettings] = useAtom(settingsAtom);
   const navigate = useNavigate();
 
   // Local state that doesn't need to persist
@@ -54,11 +49,11 @@ const MangaReader = ({
       } else if (readingMode === 'webtoon') {
         if (e.key === ' ' || e.key === 'ArrowDown') {
           if (webtoonRef.current) {
-            webtoonRef.current.scrollBy({ top: window.innerHeight * 0.8, behavior: 'smooth' });
+            webtoonRef.current.scrollBy({top: window.innerHeight * 0.8, behavior: 'smooth'});
           }
         } else if (e.key === 'ArrowUp') {
           if (webtoonRef.current) {
-            webtoonRef.current.scrollBy({ top: -window.innerHeight * 0.8, behavior: 'smooth' });
+            webtoonRef.current.scrollBy({top: -window.innerHeight * 0.8, behavior: 'smooth'});
           }
         }
       }
@@ -73,7 +68,7 @@ const MangaReader = ({
       }
 
       // Toggle page layout with 'd' key
-      if (e.key.toLowerCase() === 'd' && readerPageLayout!=="webtoon") {
+      if (e.key.toLowerCase() === 'd' && readerPageLayout !== "webtoon") {
         setReaderPageLayout(readerPageLayout === 'single' ? 'double' : 'single');
       }
 
@@ -105,15 +100,14 @@ const MangaReader = ({
 
   // Navigation functions
   const nextPage = () => {
-    if (currentPageIndex < pages.length - 1) {
-      if (readerPageLayout==="double" && readingMode === 'left-to-right' && currentPageIndex % 2 === 0) {
+    if (currentPageIndex < pages.pages.length - 1) {
+      if (readerPageLayout === "double" && readingMode === 'left-to-right' && currentPageIndex % 2 === 0) {
         // In double page mode with left-to-right, advance by 2 pages when on an even page
-        setCurrentPageIndex(Math.min(currentPageIndex + 2, pages.length - 1));
-      } else if (readerPageLayout==="double" && readingMode === 'right-to-left') {
+        setCurrentPageIndex(Math.min(currentPageIndex + 2, pages.pages.length - 1));
+      } else if (readerPageLayout === "double" && readingMode === 'right-to-left') {
         // In double page mode with right-to-left, advance by 2 pages
-        setCurrentPageIndex(Math.min(currentPageIndex + 2, pages.length - 1));
+        setCurrentPageIndex(Math.min(currentPageIndex + 2, pages.pages.length - 1));
       } else {
-        // Default single page advance
         setCurrentPageIndex(currentPageIndex + 1);
       }
     }
@@ -121,10 +115,10 @@ const MangaReader = ({
 
   const prevPage = () => {
     if (currentPageIndex > 0) {
-      if (readerPageLayout==="double" && readingMode === 'left-to-right' && currentPageIndex % 2 === 1) {
+      if (readerPageLayout === "double" && readingMode === 'left-to-right' && currentPageIndex % 2 === 1) {
         // In double page mode with left-to-right, go back by 2 pages when on an odd page
         setCurrentPageIndex(Math.max(currentPageIndex - 2, 0));
-      } else if (readerPageLayout==="double" && readingMode === 'right-to-left') {
+      } else if (readerPageLayout === "double" && readingMode === 'right-to-left') {
         // In double page mode with right-to-left, go back by 2 pages
         setCurrentPageIndex(Math.max(currentPageIndex - 2, 0));
       } else {
@@ -137,12 +131,10 @@ const MangaReader = ({
   // Handle tap zones
   const handleTapZone = (zone) => {
     if (zone === 'center') {
-      // No need to toggle controls on center tap
-      // since we're using pure CSS hover
       return;
     }
 
-    if (readingMode==="webtoon") return; // No navigation in webtoon mode
+    if (readingMode === "webtoon") return; // No navigation in webtoon mode
 
     if (readingMode === 'left-to-right') {
       if (zone === 'right') nextPage();
@@ -155,12 +147,12 @@ const MangaReader = ({
 
   // Get current page
   const getCurrentPage = () => {
-    if (pages.length === 0) return null;
-    return pages[currentPageIndex];
+    if (pages.pages.length === 0) return null;
+    return pages.pages[currentPageIndex];
   };
 
   // Empty state
-  if (pages.length === 0) {
+  if (pages.pages.length === 0) {
     return (
       <div className="h-full w-full flex justify-center items-center bg-background text-foreground">
         <div className="text-center">
@@ -184,7 +176,7 @@ const MangaReader = ({
       {/* Reader Content */}
       <div className="h-full w-full" onClick={() => handleTapZone('center')}>
         {/* Webtoon Mode */}
-        {readingMode==="webtoon" ? (
+        {readingMode === "webtoon" ? (
           <div
             ref={webtoonRef}
             className="h-full w-full overflow-auto"
@@ -197,27 +189,27 @@ const MangaReader = ({
                 width: `${Math.min(100 / readerZoom, 100)}%`
               }}
             >
-              {pages.map((page, index) => (
-                <img
+              {pages.pages.map((page, index) => {
+                return <img
                   key={index}
-                  src={page.src || page}
+                  src={manga.source_id === "local" ? convertFileSrc(pages.base_url + "/" + page) : pages.base_url + "/" + page}
                   alt={`Page ${index + 1}`}
                   className="w-auto max-w-full object-contain"
-                  style={{ transform: `scale(${readerZoom})`, transformOrigin: 'top center' }}
+                  style={{transform: `scale(${readerZoom})`, transformOrigin: 'top center'}}
                   loading="lazy"
                 />
-              ))}
+              })}
             </div>
           </div>
         ) : (
           /* Paged Mode (Left-to-Right or Right-to-Left) */
           <div className="h-full w-full flex justify-center items-center overflow-hidden">
             <div className="relative h-full w-full flex justify-center items-center">
-              {readerPageLayout==="double" ? (
+              {readerPageLayout === "double" ? (
                 // Double page view
                 <div
                   className="flex justify-center items-center"
-                  style={{ transform: `scale(${readerZoom})`, transition: 'transform 0.2s ease' }}
+                  style={{transform: `scale(${readerZoom})`, transition: 'transform 0.2s ease'}}
                 >
                   {/* Handle double page layout - show two pages side by side */}
                   {readingMode === 'right-to-left' ? (
@@ -225,7 +217,7 @@ const MangaReader = ({
                     <>
                       {/* Right page (current page) */}
                       <img
-                        src={getCurrentPage()?.src || getCurrentPage()}
+                        src={manga.source_id === "local" ? convertFileSrc(pages.base_url + "/" + getCurrentPage()) : pages.base_url + "/" + getCurrentPage()}
                         alt={`Page ${currentPageIndex + 1}`}
                         className="max-h-[calc(100vh-40px)] object-contain"
                       />
@@ -233,7 +225,7 @@ const MangaReader = ({
                       {/* Left page (next page) if available */}
                       {currentPageIndex < pages.length - 1 && (
                         <img
-                          src={pages[currentPageIndex + 1]?.src || pages[currentPageIndex + 1]}
+                          src={manga.source_id === "local" ? convertFileSrc(pages.base_url + "/" + pages[currentPageIndex + 1]) : pages.base_url + "/" + pages[currentPageIndex + 1]}
                           alt={`Page ${currentPageIndex + 2}`}
                           className="max-h-[calc(100vh-40px)] object-contain"
                         />
@@ -245,7 +237,7 @@ const MangaReader = ({
                       {/* Left page (previous page) if available and not the first page */}
                       {currentPageIndex > 0 && currentPageIndex % 2 === 1 && (
                         <img
-                          src={pages[currentPageIndex - 1]?.src || pages[currentPageIndex - 1]}
+                          src={manga.source_id === "local" ? convertFileSrc(pages.base_url + "/" + pages[currentPageIndex - 1]) : pages.base_url + "/" + pages[currentPageIndex - 1]}
                           alt={`Page ${currentPageIndex}`}
                           className="max-h-[calc(100vh-40px)] object-contain"
                         />
@@ -253,7 +245,7 @@ const MangaReader = ({
 
                       {/* Right page (current page) */}
                       <img
-                        src={getCurrentPage()?.src || getCurrentPage()}
+                        src={manga.source_id === "local" ? convertFileSrc(pages.base_url + "/" + getCurrentPage()) : pages.base_url + "/"+ getCurrentPage()}
                         alt={`Page ${currentPageIndex + 1}`}
                         className="max-h-[calc(100vh-40px)] object-contain"
                       />
@@ -263,10 +255,10 @@ const MangaReader = ({
               ) : (
                 // Single page view
                 <img
-                  src={getCurrentPage()?.src || getCurrentPage()}
+                  src={manga.source_id === "local" ? convertFileSrc(pages.base_url + "/" + getCurrentPage()) : pages.base_url + "/" + getCurrentPage()}
                   alt={`Page ${currentPageIndex + 1}`}
                   className="max-h-full max-w-full object-contain"
-                  style={{ transform: `scale(${readerZoom})`, transition: 'transform 0.2s ease' }}
+                  style={{transform: `scale(${readerZoom})`, transition: 'transform 0.2s ease'}}
                 />
               )}
             </div>
@@ -275,22 +267,28 @@ const MangaReader = ({
       </div>
 
       {/* Tap Zones */}
-      {readingMode!=="webtoon" && (
+      {readingMode !== "webtoon" && (
         <>
           <div
             className="absolute left-0 top-0 w-1/3 h-full cursor-pointer z-10"
-            onClick={(e) => { e.stopPropagation(); handleTapZone('left'); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleTapZone('left');
+            }}
           />
           <div
             className="absolute right-0 top-0 w-1/3 h-full cursor-pointer z-10"
-            onClick={(e) => { e.stopPropagation(); handleTapZone('right'); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleTapZone('right');
+            }}
           />
         </>
       )}
 
       <div className="absolute top-0 left-0 right-0 z-20 group">
         {/* Invisible hover area - larger than the visible bar for easier interaction */}
-        <div className="w-full h-16 absolute top-0 bg-transparent" />
+        <div className="w-full h-16 absolute top-0 bg-transparent"/>
 
         {/* Actual control bar - only visible on hover */}
         <div className={cn(
@@ -304,13 +302,13 @@ const MangaReader = ({
               variant={"ghost"}
               className="rounded-full p-2"
             >
-              <X strokeWidth={1.5} className="!w-5 !h-5" />
+              <X strokeWidth={1.5} className="!w-5 !h-5"/>
             </Button>
 
             <div className="text-sm px-3 py-1 text-foreground">
               {readingMode === "webtoon"
                 ? `${chapterTitle || "Chapter"}`
-                : `${currentPageIndex + 1} / ${pages.length} ${chapterTitle ? `• ${chapterTitle}` : ""}`
+                : `${currentPageIndex + 1} / ${pages.pages.length} ${chapterTitle ? `• ${chapterTitle}` : ""}`
               }
             </div>
           </div>
@@ -322,7 +320,7 @@ const MangaReader = ({
               variant={"ghost"}
               className={"rounded-full p-2 text-foreground"}
             >
-              <HelpCircle strokeWidth={1.5} className={"!w-5 !h-5"} />
+              <HelpCircle strokeWidth={1.5} className={"!w-5 !h-5"}/>
             </Button>
             <Button
               onClick={() => setShowSettings(prev => !prev)}
@@ -330,7 +328,7 @@ const MangaReader = ({
               variant="ghost"
               className={"rounded-full p-2 text-foreground"}
             >
-              <Settings strokeWidth={1.5} className={"!w-5 !h-5"} />
+              <Settings strokeWidth={1.5} className={"!w-5 !h-5"}/>
             </Button>
           </div>
         </div>
@@ -338,12 +336,12 @@ const MangaReader = ({
 
       {/* Settings Panel */}
       {showSettings && (
-        <SettingsOverlay handleClose={()=> setShowSettings(false)} />
+        <SettingsOverlay handleClose={() => setShowSettings(false)}/>
       )}
 
       {/* Help Overlay */}
       {showHelp && (
-        <HelpOverlay handleClose={()=>setShowHelp(false)} readingMode={readingMode} />
+        <HelpOverlay handleClose={() => setShowHelp(false)} readingMode={readingMode}/>
       )}
     </div>
   );

@@ -16,17 +16,11 @@ const useFetchMangaDetails = (manga) => {
       try {
         const extension = extensions.filter(ext => ext.id === manga.source_id)[0]
         if (extension) {
-          const api = extension.api.manga_details;
-          const url = api.url.replace('{id}', manga.id);
+          const api = {...extension.api.manga_details};
+          api.url = api.url.replace('{id}', manga.id);
 
           // Make request
-          const {data: response} = await axios({
-            method: api.method || 'GET',
-            url: url,
-            params: api.params || {},
-            headers: api.headers || {},
-            timeout: 15000
-          });
+          const {data: response} = await axios({...api});
           if (response.result === "ok") {
             const result = {}
             result.id = response.data.id;
