@@ -3,7 +3,6 @@ import {useAtomValue} from "jotai";
 import {extensionsAtom} from "@/store/extensions.js";
 import axios from "axios";
 import {readDir} from "@tauri-apps/plugin-fs";
-import {convertFileSrc} from "@tauri-apps/api/core";
 
 const useFetchMangaPages = (manga, chapter) => {
   const [loading, setLoading] = useState(true);
