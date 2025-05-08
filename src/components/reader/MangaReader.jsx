@@ -37,13 +37,6 @@ const MangaReader = ({
   const containerRef = useRef(null);
   const webtoonRef = useRef(null);
 
-  // Directly access chapter from location state - avoid recalculation
-  const currentChapterIndex = React.useMemo(() => {
-    if (!chapters || chapters.length === 0) return -1;
-
-    return chapters.findIndex(ch => ch.id === (chapter?.id || chapterId));
-  }, [chapters, chapter?.id, chapterId]);
-
   // Setup end detection for webtoon mode
   useEffect(() => {
     if (readingMode === 'webtoon' && webtoonRef.current) {
@@ -135,8 +128,6 @@ const MangaReader = ({
     };
   }, [readingMode, readerZoom, readerPageLayout, pages?.pages?.length, currentPageIndex]);
 
-  // Detect whether the chapters list is in ascending or descending order
-  // Default to descending order (newest first) as that's the app's default
   const isDescendingOrder = React.useMemo(() => {
     if (!chapters || chapters.length < 2) return true; // Default to descending
 
@@ -177,7 +168,7 @@ const MangaReader = ({
 
         if (isDescendingOrder) {
           // For descending order (newest first), go to lower index (older chapter)
-          nextIndex = currentIndex + 1;
+          nextIndex = currentIndex - 1;
         } else {
           // For ascending order (oldest first), go to higher index (newer chapter)
           nextIndex = currentIndex + 1;
