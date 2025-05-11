@@ -15,8 +15,6 @@ import {
 
 import useFetchMangaDetails from "@/hooks/useFetchMangaDetails"
 import useFetchMangaChapters from "@/hooks/useFetchMangaChapters";
-
-// Import UI components
 import {Button} from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -51,14 +49,11 @@ const MangaDetails = () => {
     addMangaToLibrary
   } = useMangaLibrary();
 
-  // Local state for chapter sorting
   const [sortOrder, setSortOrder] = useState('desc');
 
-  // Use custom hooks to fetch data and functionality
   const {data: details, error: detailsError, loading: detailsLoading} = useFetchMangaDetails(manga);
   const {chapters, error: chaptersError, loading: chaptersLoading} = useFetchMangaChapters(manga);
 
-  // Handle sorting order change
   const handleSort = () => {
     setSortOrder(prevOrder => prevOrder === 'desc' ? 'asc' : 'desc');
   };
@@ -67,10 +62,8 @@ const MangaDetails = () => {
     (m.id === manga.id && m.source_id === manga.source_id)
   );
 
-  // Navigate to reader with selected chapter
   const handleReadChapter = (chapter) => {
     if (chapter.isLocal) {
-      // Navigate to reader with local manga
       navigate('/reader', {
         state: {
           manga: {
@@ -80,7 +73,6 @@ const MangaDetails = () => {
         }
       });
     } else {
-      // For extension manga
       navigate('/reader', {
         state: {
           manga,
@@ -90,7 +82,6 @@ const MangaDetails = () => {
     }
   };
 
-  // Safety check
   if (!manga) {
     return (
       <div className="flex h-full w-full items-center justify-center">
@@ -121,9 +112,7 @@ const MangaDetails = () => {
 
       </div>
 
-      {/* Manga info section */}
       <div className="flex flex-row gap-6">
-        {/* Cover image */}
         <div className="flex-shrink-0">
           <div className="relative overflow-hidden rounded-lg shadow-md"
                style={{width: '280px', maxWidth: '100%'}}>
@@ -139,7 +128,6 @@ const MangaDetails = () => {
             />
           </div>
 
-          {/* Action buttons */}
           <div className="mt-4 flex flex-col gap-2">
             <Button
               className="w-full"
@@ -179,9 +167,7 @@ const MangaDetails = () => {
           </div>
         </div>
 
-        {/* Details section */}
         <div className="flex-1">
-          {/* Metadata */}
           <div className="mb-6">
             <h1 className="text-3xl font-bold">{manga.title}</h1>
             <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -220,7 +206,6 @@ const MangaDetails = () => {
                 </>
               )}
 
-              {/* Skeleton badges for loading state */}
               {manga.source !== 'local' && detailsLoading && (
                 <>
                   <Skeleton className="h-6 w-16 rounded-full"/>
@@ -230,7 +215,6 @@ const MangaDetails = () => {
               )}
             </div>
 
-            {/* Author and artist info with skeleton loading */}
             <div className="space-y-2 mb-4">
               {details?.authors && details.authors.length > 0 ? (
                 <div className="flex items-center">
@@ -261,7 +245,6 @@ const MangaDetails = () => {
               ) : null}
             </div>
 
-            {/* Description with skeleton loading */}
             <div className="mb-6">
               <h3 className="text-lg font-medium mb-2">Description</h3>
               <div className="text-sm text-muted-foreground">
@@ -280,7 +263,6 @@ const MangaDetails = () => {
             </div>
           </div>
 
-          {/* Chapters section */}
           <div>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium">Chapters</h3>
@@ -302,7 +284,6 @@ const MangaDetails = () => {
               )}
             </div>
 
-            {/* Chapter list */}
             {chaptersLoading ? (
               <div className="space-y-2">
                 {[...Array(5)].map((_, index) => (

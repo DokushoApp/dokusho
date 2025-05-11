@@ -17,7 +17,6 @@ import {
 import DraggableMenuBar from "@/components/library/DraggableMenuBar";
 import MangaCard from "@/components/base/MangaCard.jsx";
 
-// Settings Jotai Atoms for categories
 const categoriesAtom = focusAtom(settingsAtom, optic => optic.prop("categories"));
 const defaultCategoryAtom = focusAtom(settingsAtom, optic => optic.prop("default_category"));
 const mangaAtom = focusAtom(libraryAtom, optic => optic.prop("manga"));
@@ -26,13 +25,11 @@ function Library() {
   const [mangaList, setMangaList] = useAtom(mangaAtom);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Get categories from settings
   const [categories, setCategories] = useAtom(categoriesAtom);
   const [defaultCategory] = useAtom(defaultCategoryAtom);
   const [, saveSettings] = useAtom(saveSettingsAtom);
   const [, loadLibrary] = useAtom(loadLibraryAtom);
 
-  // Use the default category from settings as the initial active category
   const [selectedCategory, setSelectedCategory] = useState(defaultCategory);
 
   const handleAddMangaFolder = async () => {
@@ -49,7 +46,6 @@ function Library() {
         const folderPath = selected.toString();
         const folderName = folderPath.split('/').pop().split('\\').pop();
 
-        // Create a new manga entry
         const mangaInput = {
           title: folderName,
           path: folderPath,
@@ -82,7 +78,6 @@ function Library() {
         const fileName = filePath.split('/').pop().split('\\').pop();
         const title = fileName.replace(/\.cbz$/i, '');
 
-        // Create a new manga entry
         const mangaInput = {
           title: title,
           path: filePath,
@@ -91,6 +86,7 @@ function Library() {
 
         await invoke("import_manga_cbz", {mangaInput})
         await loadLibrary();
+
       }
     } catch (err) {
       console.error('Error adding manga CBZ:', err);
@@ -105,13 +101,11 @@ function Library() {
     setSelectedCategory(categoryId);
   };
 
-  // Handle categories reordering
   const handleCategoriesReordered = (newCategories) => {
     setCategories(newCategories);
     setTimeout(() => saveSettings(), 0);
   };
 
-  // Filter manga by "all" or specific category
   const filteredManga = selectedCategory === "all" && mangaList.length !== 0
     ? mangaList
     : mangaList.filter(manga => manga.category === selectedCategory);
@@ -148,10 +142,8 @@ function Library() {
         )}
       </div>
 
-      {/* Floating action button menu with tooltips */}
       <TooltipProvider>
         <div className="fixed bottom-6 right-6 flex flex-col-reverse items-center gap-4 z-50">
-          {/* Main toggle button */}
           <Button
             onClick={toggleMenu}
             size="icon"
@@ -165,10 +157,8 @@ function Library() {
             )}
           </Button>
 
-          {/* Animated sub-buttons that appear when menu is open */}
           <div
             className={`flex flex-col gap-3 items-center ${isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'} transition-all duration-300`}>
-            {/* Folder import button */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -182,7 +172,6 @@ function Library() {
               </TooltipTrigger>
             </Tooltip>
 
-            {/* CBZ import button */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
