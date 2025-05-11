@@ -13,22 +13,17 @@ import { focusAtom } from "jotai-optics";
 import { settingsAtom, saveSettingsAtom } from "@/store/settings";
 import CategoryManager from "@/components/settings/CategoryManager";
 
-// Settings Jotai Atoms for Library tab
 const categoriesAtom = focusAtom(settingsAtom, optic => optic.prop("categories"));
 const selectedCategoryAtom = focusAtom(settingsAtom, optic => optic.prop("selected_category_tab"));
 const defaultCategoryAtom = focusAtom(settingsAtom, optic => optic.prop("default_category"));
 
 const LibrarySettings = () => {
-  // State for category manager dialog
   const [isManagerOpen, setIsManagerOpen] = useState(false);
 
-  // Get individual atoms for settings
   const [categories] = useAtom(categoriesAtom);
   const [defaultCategory, setDefaultCategory] = useAtom(defaultCategoryAtom);
-  const [selectedCategory, setSelectedCategory] = useAtom(selectedCategoryAtom);
   const [, saveSettings] = useAtom(saveSettingsAtom);
 
-  // Auto-save handler for form elements
   const handleValueChange = (setter, value) => {
     setter(value);
     setTimeout(() => saveSettings(), 0);
@@ -40,7 +35,6 @@ const LibrarySettings = () => {
         Configure how your manga library is organized
       </p>
 
-      {/* Edit Categories */}
       <div className="flex items-center">
         <Label className="w-48">Edit Categories</Label>
         <div>
@@ -55,7 +49,6 @@ const LibrarySettings = () => {
         </div>
       </div>
 
-      {/* Default Category */}
       <div className="flex items-center">
         <Label htmlFor="defaultCategory" className="w-48">Default Category</Label>
         <div className="w-64">
@@ -77,7 +70,6 @@ const LibrarySettings = () => {
         </div>
       </div>
 
-      {/* Category Manager Dialog */}
       <CategoryManager
         open={isManagerOpen}
         onClose={() => setIsManagerOpen(false)}

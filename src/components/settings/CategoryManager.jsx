@@ -19,11 +19,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GripVertical, Trash2, Pencil, X } from "lucide-react";
-
-// Settings Jotai Atoms for categories
 const categoriesAtom = focusAtom(settingsAtom, optic => optic.prop("categories"));
 
-// Sortable Category Item Component
 const SortableItem = ({ category, onDelete, onEdit }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(category.name);
@@ -124,7 +121,6 @@ const SortableItem = ({ category, onDelete, onEdit }) => {
   );
 };
 
-// Category Manager Dialog
 const CategoryManager = ({ open, onClose }) => {
   const [categories, setCategories] = useAtom(categoriesAtom);
   const [, saveSettings] = useAtom(saveSettingsAtom);
@@ -152,13 +148,11 @@ const CategoryManager = ({ open, onClose }) => {
 
   const handleAddCategory = () => {
     if (newCategoryName.trim()) {
-      // Create a slug-like ID from the name
       const id = newCategoryName.trim()
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)/g, '');
 
-      // Make sure ID doesn't already exist
       const uniqueId = categories.some(cat => cat.id === id)
         ? `${id}-${Date.now().toString(36)}`
         : id;
@@ -175,7 +169,6 @@ const CategoryManager = ({ open, onClose }) => {
   };
 
   const handleDeleteCategory = (id) => {
-    // Don't allow deleting the "All" category
     if (id === "all") return;
 
     setCategories(categories.filter(cat => cat.id !== id));

@@ -1,7 +1,5 @@
 import React from "react";
 import Menubar from "@/components/ui/menubar";
-
-// Import the individual settings components
 import GeneralSettings from "@/components/settings/GeneralSettings";
 import LibrarySettings from "@/components/settings/LibrarySettings";
 import ReaderSettings from "@/components/settings/ReaderSettings";
@@ -9,10 +7,8 @@ import ExtensionSettings from "@/components/settings/ExtensionSettings";
 import AboutSettings from "@/components/settings/AboutSettings";
 
 const SettingsScreen = () => {
-  // Active settings tab
   const [activeTab, setActiveTab] = React.useState("general");
 
-  // Settings tabs for the MenuBar
   const settingsTabs = [
     { id: "general", name: "General" },
     { id: "library", name: "Library" },
@@ -31,7 +27,6 @@ const SettingsScreen = () => {
       />
 
       <div>
-        {/* Render the appropriate settings component based on active tab */}
         {activeTab === "general" && <GeneralSettings />}
         {activeTab === "library" && <LibrarySettings />}
         {activeTab === "reader" && <ReaderSettings />}
