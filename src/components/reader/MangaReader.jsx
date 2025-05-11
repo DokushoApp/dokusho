@@ -19,7 +19,6 @@ const MangaReader = ({
                        chapters = [],
                        chapterId
                      }) => {
-  // State from Jotai store
   const [readingMode, setReadingMode] = useAtom(readingModeAtom);
   const [readerPageLayout, setReaderPageLayout] = useAtom(readerPageLayoutAtom);
   const [readerZoom, setReaderZoom] = useAtom(readerZoomAtom);
@@ -28,12 +27,10 @@ const MangaReader = ({
   const location = useLocation();
   const chapter = location.state?.chapter;
 
-  // Local state that doesn't need to persist
   const [currentPageIndex, setCurrentPageIndex] = useState(initialPage);
   const [showSettings, setShowSettings] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
 
-  // References
   const containerRef = useRef(null);
   const webtoonRef = useRef(null);
 
@@ -43,12 +40,10 @@ const MangaReader = ({
       const webtoonElement = webtoonRef.current;
 
       const handleScroll = () => {
-        // Check if we've scrolled to the bottom (with a small buffer)
         const isAtBottom =
           webtoonElement.scrollHeight - webtoonElement.scrollTop - webtoonElement.clientHeight < 50;
 
         if (isAtBottom) {
-          // Small delay to make sure we're really at the bottom and not just passing by
           setTimeout(() => {
             const stillAtBottom =
               webtoonElement.scrollHeight - webtoonElement.scrollTop - webtoonElement.clientHeight < 50;
@@ -65,9 +60,9 @@ const MangaReader = ({
     }
   }, [readingMode, webtoonRef.current]);
 
+  // Navigation based on reading mode
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Navigation based on reading mode
       if (readingMode === 'left-to-right') {
         if (e.key === 'ArrowRight' || e.key === ' ') {
           nextPage();
@@ -92,7 +87,6 @@ const MangaReader = ({
         }
       }
 
-      // Zoom controls
       if (e.key === '+' || e.key === '=') {
         setReaderZoom(Math.min(readerZoom + 0.1, 2));
       } else if (e.key === '-') {
@@ -101,22 +95,18 @@ const MangaReader = ({
         setReaderZoom(1.0);
       }
 
-      // Toggle page layout with 'd' key
       if (e.key.toLowerCase() === 'd' && readingMode !== "webtoon") {
         setReaderPageLayout(readerPageLayout === 'single' ? 'double' : 'single');
       }
 
-      // Toggle help overlay with 'h' key
       if (e.key.toLowerCase() === 'h') {
         setShowHelp(prev => !prev);
       }
 
-      // Toggle settings with 's' key
       if (e.key.toLowerCase() === 's') {
         setShowSettings(prev => !prev);
       }
 
-      // Close reader with Escape key
       if (e.key === 'Escape' && !showHelp) {
         handleReaderClose();
       }
@@ -131,82 +121,66 @@ const MangaReader = ({
   const isDescendingOrder = React.useMemo(() => {
     if (!chapters || chapters.length < 2) return true; // Default to descending
 
-    // Try to determine order based on chapter numbers
     const firstChapterWithNumber = chapters.find(ch => ch.number);
     const lastChapterWithNumber = [...chapters].reverse().find(ch => ch.number);
 
     if (firstChapterWithNumber && lastChapterWithNumber) {
       const firstNum = parseFloat(firstChapterWithNumber.number) || 0;
       const lastNum = parseFloat(lastChapterWithNumber.number) || 0;
-      return firstNum > lastNum; // If first chapter number > last, it's descending
+      return firstNum > lastNum;
     }
 
-    // Default assumption: descending order (newest first)
     return true;
   }, [chapters]);
 
-  // Function to handle moving to the next chapter with debounce to prevent multiple triggers
   const [isNavigating, setIsNavigating] = useState(false);
 
   const goToNextChapter = () => {
-    // Prevent multiple rapid navigation attempts
     if (isNavigating) return;
 
     setIsNavigating(true);
 
     // Important: Use the chapters array passed as prop
     if (chapters && chapters.length > 0) {
-      // Find current chapter index
       const currentIndex = chapters.findIndex(ch =>
         ch.id === (chapter?.id || chapterId)
       );
 
-      // If we have a valid index
       if (currentIndex !== -1) {
-        // Determine next chapter based on order
         let nextIndex;
 
         if (isDescendingOrder) {
-          // For descending order (newest first), go to lower index (older chapter)
           nextIndex = currentIndex - 1;
         } else {
-          // For ascending order (oldest first), go to higher index (newer chapter)
           nextIndex = currentIndex + 1;
         }
 
-        // Check if next index is valid
         if (nextIndex >= 0 && nextIndex < chapters.length) {
           const nextChapter = chapters[nextIndex];
           console.log("Navigating to chapter:", nextChapter.title || nextChapter.id, "Index:", nextIndex);
 
-          // Navigate to the reader with the next chapter
           navigate('/reader', {
             state: {
               manga,
               chapter: nextChapter
             },
-            replace: true // Replace current history entry to avoid back button issues
+            replace: true
           });
 
-          // Reset navigation lock after delay
           setTimeout(() => setIsNavigating(false), 1000);
           return;
         }
       }
 
-      // If we get here, there's no valid next chapter
       console.log("No next chapter available, returning to details");
       navigate(-1);
     } else {
-      // No chapters available, go back
       navigate(-1);
     }
 
-    // Reset navigation lock after delay
     setTimeout(() => setIsNavigating(false), 1000);
   };
 
-  // Function to handle moving to the previous chapter
   const goToPreviousChapter = () => {
     if (isNavigating) return;
     setIsNavigating(true);
@@ -217,21 +191,16 @@ const MangaReader = ({
       );
 
       if (currentIndex !== -1) {
-        // Determine previous chapter based on order
         let prevIndex;
 
         if (isDescendingOrder) {
-          // For descending order (newest first), go to higher index (newer chapter)
           prevIndex = currentIndex - 1;
         } else {
-          // For ascending order (oldest first), go to lower index (older chapter)
           prevIndex = currentIndex - 1;
         }
 
-        // Check if previous index is valid
         if (prevIndex >= 0 && prevIndex < chapters.length) {
           const prevChapter = chapters[prevIndex];
-          console.log("Navigating to previous chapter:", prevChapter.title || prevChapter.id);
 
           navigate('/reader', {
             state: {
@@ -247,7 +216,6 @@ const MangaReader = ({
       }
     }
 
-    // If no valid previous chapter, just go to first page of current chapter
     setCurrentPageIndex(0);
     setTimeout(() => setIsNavigating(false), 1000);
   };
@@ -260,20 +228,16 @@ const MangaReader = ({
     }
   };
 
-  // Navigation functions
   const nextPage = () => {
     if (currentPageIndex < pages.pages.length - 1) {
       if (readerPageLayout === "double" && readingMode === 'left-to-right' && currentPageIndex % 2 === 0) {
-        // In double page mode with left-to-right, advance by 2 pages when on an even page
         setCurrentPageIndex(Math.min(currentPageIndex + 2, pages.pages.length - 1));
       } else if (readerPageLayout === "double" && readingMode === 'right-to-left') {
-        // In double page mode with right-to-left, advance by 2 pages
         setCurrentPageIndex(Math.min(currentPageIndex + 2, pages.pages.length - 1));
       } else {
         setCurrentPageIndex(currentPageIndex + 1);
       }
     } else {
-      // At the end of the chapter, automatically go to the next chapter
       goToNextChapter();
     }
   };
@@ -281,17 +245,13 @@ const MangaReader = ({
   const prevPage = () => {
     if (currentPageIndex > 0) {
       if (readerPageLayout === "double" && readingMode === 'left-to-right' && currentPageIndex % 2 === 1) {
-        // In double page mode with left-to-right, go back by 2 pages when on an odd page
         setCurrentPageIndex(Math.max(currentPageIndex - 2, 0));
       } else if (readerPageLayout === "double" && readingMode === 'right-to-left') {
-        // In double page mode with right-to-left, go back by 2 pages
         setCurrentPageIndex(Math.max(currentPageIndex - 2, 0));
       } else {
-        // Default single page back
         setCurrentPageIndex(currentPageIndex - 1);
       }
     } else {
-      // At the beginning of the chapter, try to go to the previous chapter
       goToPreviousChapter();
     }
   };
@@ -313,13 +273,11 @@ const MangaReader = ({
     }
   };
 
-  // Get current page
   const getCurrentPage = () => {
     if (!pages?.pages || pages.pages.length === 0) return null;
     return pages.pages[currentPageIndex];
   };
 
-  // Empty state
   if (!pages?.pages || pages.pages.length === 0) {
     return (
       <div className="h-full w-full flex justify-center items-center bg-background text-foreground">
@@ -341,9 +299,7 @@ const MangaReader = ({
       className="h-full w-full relative bg-background"
       ref={containerRef}
     >
-      {/* Reader Content */}
       <div className="h-full w-full" onClick={() => handleTapZone('center')}>
-        {/* Webtoon Mode */}
         {readingMode === "webtoon" ? (
           <div
             ref={webtoonRef}
@@ -368,34 +324,28 @@ const MangaReader = ({
                 />
               })}
 
-              {/* Small indicator at the bottom that user has reached the end */}
-              <div className="w-full py-8 text-center text-muted-foreground text-sm">
+              <div className="w-full h-3 py-8 text-center text-muted-foreground text-sm">
+                {/*Need to implement Chapter page number just like in Tachimanga*/}
                 Loading next chapter...
               </div>
             </div>
           </div>
         ) : (
-          /* Paged Mode (Left-to-Right or Right-to-Left) */
           <div className="h-full w-full flex justify-center items-center overflow-hidden">
             <div className="relative h-full w-full flex justify-center items-center">
               {readerPageLayout === "double" ? (
-                // Double page view
                 <div
                   className="flex justify-center items-center"
                   style={{transform: `scale(${readerZoom})`, transition: 'transform 0.2s ease'}}
                 >
-                  {/* Handle double page layout - show two pages side by side */}
                   {readingMode === 'right-to-left' ? (
-                    // For right-to-left manga, the right page comes first
                     <>
-                      {/* Right page (current page) */}
                       <img
                         src={manga.source_id === "local" ? convertFileSrc(pages.base_url + "/" + getCurrentPage()) : pages.base_url + "/" + getCurrentPage()}
                         alt={`Page ${currentPageIndex + 1}`}
                         className="max-h-[calc(100vh-40px)] object-contain"
                       />
 
-                      {/* Left page (next page) if available */}
                       {currentPageIndex < pages.pages.length - 1 && (
                         <img
                           src={manga.source_id === "local" ?
@@ -407,9 +357,7 @@ const MangaReader = ({
                       )}
                     </>
                   ) : (
-                    // For left-to-right manga, the left page comes first
                     <>
-                      {/* Left page (previous page) if available and not the first page */}
                       {currentPageIndex > 0 && currentPageIndex % 2 === 1 && (
                         <img
                           src={manga.source_id === "local" ?
@@ -420,7 +368,6 @@ const MangaReader = ({
                         />
                       )}
 
-                      {/* Right page (current page) */}
                       <img
                         src={manga.source_id === "local" ?
                           convertFileSrc(pages.base_url + "/" + getCurrentPage()) :
@@ -432,7 +379,6 @@ const MangaReader = ({
                   )}
                 </div>
               ) : (
-                // Single page view
                 <img
                   src={manga.source_id === "local" ?
                     convertFileSrc(pages.base_url + "/" + getCurrentPage()) :
@@ -447,7 +393,6 @@ const MangaReader = ({
         )}
       </div>
 
-      {/* Tap Zones */}
       {readingMode !== "webtoon" && (
         <>
           <div
@@ -468,10 +413,8 @@ const MangaReader = ({
       )}
 
       <div className="absolute top-0 left-0 right-0 z-20 group">
-        {/* Invisible hover area - larger than the visible bar for easier interaction */}
         <div className="w-full h-16 absolute top-0 bg-transparent"/>
 
-        {/* Actual control bar - only visible on hover */}
         <div className={cn(
           "w-full bg-background/50 backdrop-blur-sm p-4 flex justify-between items-center transition-opacity duration-300",
           showSettings || showHelp ? "opacity-100" : "opacity-0 group-hover:opacity-100"
@@ -515,14 +458,10 @@ const MangaReader = ({
         </div>
       </div>
 
-
-
-      {/* Settings Panel */}
       {showSettings && (
         <SettingsOverlay handleClose={() => setShowSettings(false)}/>
       )}
 
-      {/* Help Overlay */}
       {showHelp && (
         <HelpOverlay handleClose={() => setShowHelp(false)} readingMode={readingMode}/>
       )}
