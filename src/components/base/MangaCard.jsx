@@ -39,11 +39,10 @@ import {
  *
  * @param {Object} props
  * @param {Object} props.manga - Manga data object
- * @param {Function} props.onClick - Optional click handler for the card
  * @param {string} props.className - Optional class names
  * @returns {JSX.Element}
  */
-const MangaCard = ({manga, onClick, isLibrary}) => {
+const MangaCard = ({manga, isLibrary}) => {
   const navigate = useNavigate();
   const categories = useAtomValue(categoriesAtom);
   const mangaList = useAtomValue(mangaListAtom);
@@ -59,12 +58,7 @@ const MangaCard = ({manga, onClick, isLibrary}) => {
 
   // Handle viewing manga details
   const handleViewDetails = () => {
-    if (onClick) {
-      onClick(manga);
-    } else {
-      // Default navigation
-      navigate('/manga/', {state: {manga}});
-    }
+    navigate('/manga/', {state: {manga}});
   };
 
   // Handle reading the manga
