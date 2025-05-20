@@ -33,6 +33,10 @@ import {categoriesAtom} from "@/store/settings.js"
 import {useMangaLibrary} from "@/hooks/useMangaLibrary.js";
 import {convertFileSrc} from "@tauri-apps/api/core";
 
+/**
+ * Manga details page component
+ * Displays manga information, chapters, and related actions
+ */
 const MangaDetails = () => {
   const location = useLocation();
   const navigate = useNavigate();
