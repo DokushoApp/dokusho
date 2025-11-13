@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect, useRef, useCallback} from 'react';
 import {useLocation, useNavigate} from 'react-router';
 import {useAtomValue} from 'jotai';
 import {
@@ -51,17 +51,52 @@ const MangaDetails = () => {
     addMangaToLibrary
   } = useMangaLibrary();
 
-  // Local state for chapter sorting
+  // Local state for chapter sorting and pagination
   const [sortOrder, setSortOrder] = useState('desc');
+  const [offset, setOffset] = useState(0);
+  const chaptersListRef = useRef(null);
+  const observerRef = useRef(null);
 
   // Use custom hooks to fetch data and functionality
   const {data: details, error: detailsError, loading: detailsLoading} = useFetchMangaDetails(manga);
-  const {chapters, error: chaptersError, loading: chaptersLoading} = useFetchMangaChapters(manga);
+  const {chapters, error: chaptersError, loading: chaptersLoading, hasMore} = useFetchMangaChapters(
+    manga, 
+    offset, 
+    sortOrder, 
+    offset > 0 // append when offset > 0
+  );
 
-  // Handle sorting order change
+  // Handle sorting order change - reset offset when sort order changes
   const handleSort = () => {
-    setSortOrder(prevOrder => prevOrder === 'desc' ? 'asc' : 'desc');
+    setSortOrder(prevOrder => {
+      const newOrder = prevOrder === 'desc' ? 'asc' : 'desc';
+      setOffset(0); // Reset offset when sort order changes
+      return newOrder;
+    });
   };
+
+  // Infinite scroll handler
+  const lastChapterElementRef = useCallback((node) => {
+    if (chaptersLoading) return;
+    if (observerRef.current) observerRef.current.disconnect();
+    
+    observerRef.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore && !chaptersLoading) {
+        setOffset(prevOffset => prevOffset + 100); // MangaDex default limit is 100
+      }
+    });
+    
+    if (node) observerRef.current.observe(node);
+  }, [chaptersLoading, hasMore]);
+
+  // Cleanup IntersectionObserver on unmount
+  useEffect(() => {
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, []);
 
   const isInLibrary = mangaList.some(m =>
     (m.id === manga.id && m.source_id === manga.source_id)
@@ -329,32 +364,53 @@ const MangaDetails = () => {
                 <p>No chapters available.</p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {chapters.map((chapter) => (
-                  <div
-                    key={chapter.id}
-                    className="flex items-center justify-between p-3 rounded-md border hover:bg-accent cursor-pointer transition-colors"
-                    onClick={() => handleReadChapter(chapter)}
-                  >
-                    <div className="flex-1">
-                      <div className="font-medium">
-                        {chapter.volume ? `Vol. ${chapter.volume} ` : ''}
-                        {chapter.number && !chapter.isLocal ? `Ch. ${chapter.number}` : ''}
-                        {chapter.title && !chapter.title.includes(`Chapter ${chapter.number}`) &&
-                          (chapter.isLocal ? chapter.title : ` - ${chapter.title}`)}
-                      </div>
-                      {chapter.publishedAt && (
-                        <div className="text-xs text-muted-foreground flex items-center">
-                          <Calendar className="h-3 w-3 mr-1"/>
-                          {chapter.publishedAt}
+              <div className="space-y-2" ref={chaptersListRef}>
+                {chapters.map((chapter, index) => {
+                  // Attach ref to last chapter for infinite scroll
+                  const isLastChapter = index === chapters.length - 1;
+                  return (
+                    <div
+                      key={chapter.id}
+                      ref={isLastChapter ? lastChapterElementRef : null}
+                      className="flex items-center justify-between p-3 rounded-md border hover:bg-accent cursor-pointer transition-colors"
+                      onClick={() => handleReadChapter(chapter)}
+                    >
+                      <div className="flex-1">
+                        <div className="font-medium">
+                          {chapter.volume ? `Vol. ${chapter.volume} ` : ''}
+                          {chapter.number && !chapter.isLocal ? `Ch. ${chapter.number}` : ''}
+                          {chapter.title && !chapter.title.includes(`Chapter ${chapter.number}`) &&
+                            (chapter.isLocal ? chapter.title : ` - ${chapter.title}`)}
                         </div>
-                      )}
+                        {chapter.published_at && (
+                          <div className="text-xs text-muted-foreground flex items-center">
+                            <Calendar className="h-3 w-3 mr-1"/>
+                            {new Date(chapter.published_at).toLocaleDateString()}
+                          </div>
+                        )}
+                      </div>
+                      <Button size="sm" variant="ghost">
+                        <BookOpen className="h-4 w-4"/>
+                      </Button>
                     </div>
-                    <Button size="sm" variant="ghost">
-                      <BookOpen className="h-4 w-4"/>
-                    </Button>
+                  );
+                })}
+                {chaptersLoading && hasMore && (
+                  <div className="space-y-2">
+                    {[...Array(3)].map((_, index) => (
+                      <div
+                        key={`skeleton-loading-${index}`}
+                        className="flex items-center justify-between p-3 rounded-md border"
+                      >
+                        <div className="flex-1">
+                          <Skeleton className="w-3/4 h-5 mb-2"/>
+                          <Skeleton className="w-1/4 h-3"/>
+                        </div>
+                        <Skeleton className="w-8 h-8 rounded-md"/>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
             )}
           </div>
