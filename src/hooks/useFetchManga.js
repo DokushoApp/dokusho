@@ -4,7 +4,9 @@ import { useAtomValue } from 'jotai';
 import { extensionsAtom, selectedExtensionAtom } from '@/store/extensions';
 import { showNsfwAtom } from '@/store/settings';
 import { nanoid } from 'nanoid';
+function fetchData() {
 
+}
 /**
  * Custom hook for fetching manga from selected extension
  *
@@ -129,13 +131,11 @@ const useFetchManga = (query = '', endpoint = 'search', customParams = {}) => {
       return;
     }
 
-    // Update refs for the next comparison
     prevQueryRef.current = query;
     prevExtensionIdRef.current = selectedExtensionId;
     prevShowNsfwRef.current = showNsfw;
     prevParamsRef.current = paramsString;
 
-    // Create an abort controller to cancel the request if the component unmounts
     const controller = new AbortController();
 
     const fetchData = async () => {
@@ -146,17 +146,14 @@ const useFetchManga = (query = '', endpoint = 'search', customParams = {}) => {
         const apiEndpoint = selectedExtension.api[endpoint];
         const { url, method, headers = {}, params = {} } = apiEndpoint;
 
-        // Prepare request parameters
         const requestParams = { ...params, ...customParams };
 
-        // Replace any placeholders in the params
         for (const key in requestParams) {
           if (typeof requestParams[key] === 'string') {
             requestParams[key] = requestParams[key].replace('{query}', query);
           }
         }
 
-        // Make API request
         const { data: responseData } = await axios({
           method: method || 'GET',
           url,
@@ -166,10 +163,8 @@ const useFetchManga = (query = '', endpoint = 'search', customParams = {}) => {
           signal: controller.signal
         });
 
-        // Process response data
         const { items: processedData, total } = processResponse(responseData, selectedExtension, endpoint);
 
-        // Filter NSFW content if necessary
         const filteredData = !showNsfw
           ? processedData.filter(item => !item.contentRating || item.contentRating !== 'pornographic')
           : processedData;
