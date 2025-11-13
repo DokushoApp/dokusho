@@ -11,22 +11,18 @@ import { Label } from "@/components/ui/label";
 import { useAtom } from "jotai";
 import { focusAtom } from "jotai-optics";
 import { settingsAtom, saveSettingsAtom } from "@/store/settings";
-
-// Settings Jotai Atoms for Reader tab
 const readingModeAtom = focusAtom(settingsAtom, optic => optic.prop("reading_mode"));
 const readingPageLayoutAtom = focusAtom(settingsAtom, optic => optic.prop("reading_page_layout"));
 const readerZoomAtom = focusAtom(settingsAtom, optic => optic.prop("reader_zoom"));
 const readerPaddingAtom = focusAtom(settingsAtom, optic => optic.prop("reader_padding"));
 
 const ReaderSettings = () => {
-  // Get individual atoms for settings
   const [readingMode, setReadingMode] = useAtom(readingModeAtom);
   const [readingLayout, setReadingLayout] = useAtom(readingPageLayoutAtom);
   const [readerZoom, setReaderZoom] = useAtom(readerZoomAtom);
   const [readerPadding, setReaderPadding] = useAtom(readerPaddingAtom);
   const [, saveSettings] = useAtom(saveSettingsAtom);
 
-  // Auto-save handler for form elements
   const handleValueChange = (setter, value) => {
     setter(value);
     setTimeout(() => saveSettings(), 0);
@@ -38,7 +34,6 @@ const ReaderSettings = () => {
         Configure your reading experience
       </p>
 
-      {/* Reading Mode */}
       <div className="flex items-center">
         <Label htmlFor="readingMode" className="w-48">Reading Mode</Label>
         <div className="w-64">
@@ -59,7 +54,6 @@ const ReaderSettings = () => {
         </div>
       </div>
 
-      {/* Reading Page Layout */}
       <div className="flex items-center">
         <Label htmlFor="readingLayout" className="w-48">Reading Page Layout</Label>
         <div className="w-64">
@@ -79,7 +73,6 @@ const ReaderSettings = () => {
         </div>
       </div>
 
-      {/* Reader Zoom */}
       <div className="flex items-center">
         <Label htmlFor="readerZoom" className="w-48">Reader Zoom</Label>
         <div className="flex items-center gap-4">
@@ -98,7 +91,6 @@ const ReaderSettings = () => {
         </div>
       </div>
 
-      {/* Reader Padding */}
       <div className="flex items-center">
         <Label htmlFor="readerPadding" className="w-48">Reader Padding</Label>
         <div className="flex items-center gap-4">

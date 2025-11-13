@@ -1,21 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router';
 import { useAtom } from 'jotai';
 import { selectedExtensionAtom, loadExtensionsAtom } from '@/store/extensions';
 import { Search, Filter, AlertCircle, RefreshCw } from 'lucide-react';
 import { useDebounce } from '@uidotdev/usehooks';
 
-// UI Components
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 
-// Custom Components
 import ExtensionSelector from '@/components/browse/ExtensionSelector';
 import ExtensionEmptyState from '@/components/browse/ExtensionEmptyState';
 import MangaCard from '@/components/base/MangaCard';
 
-// Custom Hooks
 import useFetchManga from '@/hooks/useFetchManga';
 
 /**
@@ -23,21 +19,16 @@ import useFetchManga from '@/hooks/useFetchManga';
  * Allows searching and browsing manga from various sources
  */
 function Browse() {
-  const navigate = useNavigate();
 
-  // Global state
   const [extensions = [], loadExtensions] = useAtom(loadExtensionsAtom);
   const [selectedExtension, setSelectedExtension] = useAtom(selectedExtensionAtom);
 
-  // Local state
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Ensure extensions is treated as an array
   const extensionList = Array.isArray(extensions) ? extensions : [];
 
   const debouncedSearch = useDebounce(searchQuery, 500);
 
-  // Use custom hook to fetch manga data with stable customParams object
   const customParams = React.useMemo(() => ({}), []);
   const { data: manga, loading, error, retry } = useFetchManga(
     debouncedSearch,
@@ -45,7 +36,6 @@ function Browse() {
     customParams
   );
 
-  // Load extensions on first render if needed
   useEffect(() => {
     const initialLoad = async () => {
       try {
@@ -58,28 +48,24 @@ function Browse() {
     };
 
     initialLoad();
-  }, []);  // Empty dependency array to run only once
+  }, []);
 
-  // Select first extension as default if available
   useEffect(() => {
     if (!selectedExtension && extensionList.length > 0) {
       setSelectedExtension(extensionList[0].id);
     }
   }, [extensionList.length, selectedExtension, setSelectedExtension]);
 
-  // Handle search input change
   const handleSearchChange = useCallback((e) => {
     setSearchQuery(e.target.value);
   }, []);
 
-  // If no extensions are installed, show empty state
   if (extensionList.length === 0) {
     return <ExtensionEmptyState />;
   }
 
   return (
     <div className="flex flex-1 flex-col h-full">
-      {/* Search and filters section */}
       <div className="flex flex-col gap-4 py-4">
         <div className="flex flex-row gap-4">
           <div className="relative flex-1">
@@ -104,14 +90,12 @@ function Browse() {
         </div>
       </div>
 
-      {/* Main content area */}
       <div className="flex-1 overflow-auto no-scrollbar py-2">
         {renderContent()}
       </div>
     </div>
   );
 
-  // Helper function to render the appropriate content
   function renderContent() {
     if (error) {
       return (
@@ -147,7 +131,6 @@ function Browse() {
       );
     }
 
-    // Render manga grid
     return (
       <div className="flex flex-wrap gap-3">
         {manga.map(item => (
@@ -162,7 +145,6 @@ function Browse() {
   }
 }
 
-// Skeleton loader for the manga grid
 function LoadingGrid() {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">

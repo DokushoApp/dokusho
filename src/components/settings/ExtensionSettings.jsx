@@ -34,11 +34,9 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { nanoid } from 'nanoid';
 import { Plus, ExternalLink, Trash2, RefreshCw, Link2, FileText, Download } from "lucide-react";
 
-// Settings Jotai Atoms for Extension tab
 const showNsfwAtom = focusAtom(settingsAtom, optic => optic.prop("show_nsfw"));
 
 const ExtensionSettings = () => {
-  // State for extension dialog
   const [isAddExtensionOpen, setIsAddExtensionOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("file");
   const [extensionUrl, setExtensionUrl] = useState("");
@@ -46,22 +44,18 @@ const ExtensionSettings = () => {
   const [loading, setLoading] = useState(false);
   const [extensions, setExtensions] = useState([]);
 
-  // Get individual atoms for settings
   const [showNSFW, setShowNSFW] = useAtom(showNsfwAtom);
   const [, saveSettings] = useAtom(saveSettingsAtom);
 
-  // Load extensions on component mount
   useEffect(() => {
     loadExtensions();
   }, []);
 
-  // Auto-save handler for form elements
   const handleValueChange = (setter, value) => {
     setter(value);
     setTimeout(() => saveSettings(), 0);
   };
 
-  // Load all extensions
   const loadExtensions = async () => {
     try {
       setLoading(true);
@@ -75,7 +69,6 @@ const ExtensionSettings = () => {
     }
   };
 
-  // Handle file upload for extension
   const handleFileUpload = async () => {
     try {
       setError(null);
@@ -93,22 +86,17 @@ const ExtensionSettings = () => {
       if (selected) {
         const filePath = selected.toString();
 
-        // Validate the extension file
         try {
           const extension = await invoke("validate_extension_file", { path: filePath });
 
-          // Add source info
           extension.source_type = 'file';
           extension.source_path = filePath;
           extension.added_at = new Date().toISOString();
 
-          // Add the extension
           await invoke("add_extension", { extension });
 
-          // Reload extensions
           await loadExtensions();
 
-          // Close dialog and reset form
           setIsAddExtensionOpen(false);
           setExtensionUrl("");
         } catch (validationErr) {
@@ -123,7 +111,6 @@ const ExtensionSettings = () => {
     }
   };
 
-  // Handle URL extension addition
   const handleUrlAdd = async () => {
     try {
       setError(null);
@@ -135,29 +122,22 @@ const ExtensionSettings = () => {
         return;
       }
 
-      // Validate the URL
       if (!extensionUrl.startsWith('http://') && !extensionUrl.startsWith('https://')) {
         setError("URL must start with http:// or https://");
         setLoading(false);
         return;
       }
-
-      // Validate extension URL
       try {
         const extension = await invoke("validate_extension_url", { url: extensionUrl });
 
-        // Add source info
         extension.source_type = 'url';
         extension.source_path = extensionUrl;
         extension.added_at = new Date().toISOString();
 
-        // Add the extension
         await invoke("add_extension", { extension });
 
-        // Reload extensions
         await loadExtensions();
 
-        // Close dialog and reset form
         setIsAddExtensionOpen(false);
         setExtensionUrl("");
       } catch (validationErr) {
@@ -171,7 +151,6 @@ const ExtensionSettings = () => {
     }
   };
 
-  // Handle extension deletion
   const handleDeleteExtension = async (extensionId) => {
     try {
       setLoading(true);
@@ -191,7 +170,6 @@ const ExtensionSettings = () => {
         Add and manage extensions for your manga reader
       </p>
 
-      {/* Extensions */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <Label className="text-base">Extensions</Label>
@@ -289,7 +267,6 @@ const ExtensionSettings = () => {
           </Dialog>
         </div>
 
-        {/* Extension List */}
         <div className="space-y-3 mt-2">
           {loading && (
             <div className="flex justify-center py-8">
@@ -368,7 +345,6 @@ const ExtensionSettings = () => {
         </div>
       </div>
 
-      {/* Show NSFW */}
       <div className="flex items-center pt-4 border-t">
         <Label htmlFor="showNSFW" className="w-48">Show NSFW Content</Label>
         <div>

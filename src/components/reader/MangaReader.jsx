@@ -6,34 +6,63 @@ import HelpOverlay from "@/components/reader/HelpOverlay.jsx";
 import SettingsOverlay from "@/components/reader/SettingsOverlay.jsx";
 import {Button} from "@/components/ui/button.jsx";
 import {readerPageLayoutAtom, readerZoomAtom, readingModeAtom} from "@/store/settings.js";
-import {useNavigate} from "react-router";
+import {useNavigate, useLocation} from "react-router";
 import {convertFileSrc} from "@tauri-apps/api/core";
+import useFetchMangaChapters from "@/hooks/useFetchMangaChapters";
 
 const MangaReader = ({
                        pages,
                        manga,
                        initialPage = 0,
-                       chapterTitle = ""
+                       chapterTitle = "",
+                       onClose,
+                       chapters = [],
+                       chapterId
                      }) => {
-  // State from Jotai store
   const [readingMode, setReadingMode] = useAtom(readingModeAtom);
   const [readerPageLayout, setReaderPageLayout] = useAtom(readerPageLayoutAtom);
   const [readerZoom, setReaderZoom] = useAtom(readerZoomAtom);
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const chapter = location.state?.chapter;
 
-  // Local state that doesn't need to persist
   const [currentPageIndex, setCurrentPageIndex] = useState(initialPage);
   const [showSettings, setShowSettings] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
 
-  // References
   const containerRef = useRef(null);
   const webtoonRef = useRef(null);
 
+  // Setup end detection for webtoon mode
+  useEffect(() => {
+    if (readingMode === 'webtoon' && webtoonRef.current) {
+      const webtoonElement = webtoonRef.current;
+
+      const handleScroll = () => {
+        const isAtBottom =
+          webtoonElement.scrollHeight - webtoonElement.scrollTop - webtoonElement.clientHeight < 50;
+
+        if (isAtBottom) {
+          setTimeout(() => {
+            const stillAtBottom =
+              webtoonElement.scrollHeight - webtoonElement.scrollTop - webtoonElement.clientHeight < 50;
+
+            if (stillAtBottom) {
+              goToNextChapter();
+            }
+          }, 300);
+        }
+      };
+
+      webtoonElement.addEventListener('scroll', handleScroll);
+      return () => webtoonElement.removeEventListener('scroll', handleScroll);
+    }
+  }, [readingMode, webtoonRef.current]);
+
+  // Navigation based on reading mode
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Navigation based on reading mode
       if (readingMode === 'left-to-right') {
         if (e.key === 'ArrowRight' || e.key === ' ') {
           nextPage();
@@ -58,7 +87,6 @@ const MangaReader = ({
         }
       }
 
-      // Zoom controls
       if (e.key === '+' || e.key === '=') {
         setReaderZoom(Math.min(readerZoom + 0.1, 2));
       } else if (e.key === '-') {
@@ -67,22 +95,18 @@ const MangaReader = ({
         setReaderZoom(1.0);
       }
 
-      // Toggle page layout with 'd' key
-      if (e.key.toLowerCase() === 'd' && readerPageLayout !== "webtoon") {
+      if (e.key.toLowerCase() === 'd' && readingMode !== "webtoon") {
         setReaderPageLayout(readerPageLayout === 'single' ? 'double' : 'single');
       }
 
-      // Toggle help overlay with 'h' key
       if (e.key.toLowerCase() === 'h') {
         setShowHelp(prev => !prev);
       }
 
-      // Toggle settings with 's' key
       if (e.key.toLowerCase() === 's') {
         setShowSettings(prev => !prev);
       }
 
-      // Close reader with Escape key
       if (e.key === 'Escape' && !showHelp) {
         handleReaderClose();
       }
@@ -92,39 +116,143 @@ const MangaReader = ({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [readingMode, readerZoom, readerPageLayout, pages.length, currentPageIndex]);
+  }, [readingMode, readerZoom, readerPageLayout, pages?.pages?.length, currentPageIndex]);
+
+  const isDescendingOrder = React.useMemo(() => {
+    if (!chapters || chapters.length < 2) return true; // Default to descending
+
+    const firstChapterWithNumber = chapters.find(ch => ch.number);
+    const lastChapterWithNumber = [...chapters].reverse().find(ch => ch.number);
+
+    if (firstChapterWithNumber && lastChapterWithNumber) {
+      const firstNum = parseFloat(firstChapterWithNumber.number) || 0;
+      const lastNum = parseFloat(lastChapterWithNumber.number) || 0;
+      return firstNum > lastNum;
+    }
+
+    return true;
+  }, [chapters]);
+
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  const goToNextChapter = () => {
+    if (isNavigating) return;
+
+    setIsNavigating(true);
+
+    // Important: Use the chapters array passed as prop
+    if (chapters && chapters.length > 0) {
+      const currentIndex = chapters.findIndex(ch =>
+        ch.id === (chapter?.id || chapterId)
+      );
+
+      if (currentIndex !== -1) {
+        let nextIndex;
+
+        if (isDescendingOrder) {
+          nextIndex = currentIndex - 1;
+        } else {
+          nextIndex = currentIndex + 1;
+        }
+
+        if (nextIndex >= 0 && nextIndex < chapters.length) {
+          const nextChapter = chapters[nextIndex];
+          console.log("Navigating to chapter:", nextChapter.title || nextChapter.id, "Index:", nextIndex);
+
+          navigate('/reader', {
+            state: {
+              manga,
+              chapter: nextChapter
+            },
+            replace: true
+          });
+
+          setTimeout(() => setIsNavigating(false), 1000);
+          return;
+        }
+      }
+
+      console.log("No next chapter available, returning to details");
+      navigate(-1);
+    } else {
+      navigate(-1);
+    }
+
+    setTimeout(() => setIsNavigating(false), 1000);
+  };
+
+  const goToPreviousChapter = () => {
+    if (isNavigating) return;
+    setIsNavigating(true);
+
+    if (chapters && chapters.length > 0) {
+      const currentIndex = chapters.findIndex(ch =>
+        ch.id === (chapter?.id || chapterId)
+      );
+
+      if (currentIndex !== -1) {
+        let prevIndex;
+
+        if (isDescendingOrder) {
+          prevIndex = currentIndex - 1;
+        } else {
+          prevIndex = currentIndex - 1;
+        }
+
+        if (prevIndex >= 0 && prevIndex < chapters.length) {
+          const prevChapter = chapters[prevIndex];
+
+          navigate('/reader', {
+            state: {
+              manga,
+              chapter: prevChapter
+            },
+            replace: true
+          });
+
+          setTimeout(() => setIsNavigating(false), 1000);
+          return;
+        }
+      }
+    }
+
+    setCurrentPageIndex(0);
+    setTimeout(() => setIsNavigating(false), 1000);
+  };
 
   const handleReaderClose = () => {
-    navigate('/');
-  }
+    if (onClose) {
+      onClose();
+    } else {
+      navigate(-1);
+    }
+  };
 
-  // Navigation functions
   const nextPage = () => {
     if (currentPageIndex < pages.pages.length - 1) {
       if (readerPageLayout === "double" && readingMode === 'left-to-right' && currentPageIndex % 2 === 0) {
-        // In double page mode with left-to-right, advance by 2 pages when on an even page
         setCurrentPageIndex(Math.min(currentPageIndex + 2, pages.pages.length - 1));
       } else if (readerPageLayout === "double" && readingMode === 'right-to-left') {
-        // In double page mode with right-to-left, advance by 2 pages
         setCurrentPageIndex(Math.min(currentPageIndex + 2, pages.pages.length - 1));
       } else {
         setCurrentPageIndex(currentPageIndex + 1);
       }
+    } else {
+      goToNextChapter();
     }
   };
 
   const prevPage = () => {
     if (currentPageIndex > 0) {
       if (readerPageLayout === "double" && readingMode === 'left-to-right' && currentPageIndex % 2 === 1) {
-        // In double page mode with left-to-right, go back by 2 pages when on an odd page
         setCurrentPageIndex(Math.max(currentPageIndex - 2, 0));
       } else if (readerPageLayout === "double" && readingMode === 'right-to-left') {
-        // In double page mode with right-to-left, go back by 2 pages
         setCurrentPageIndex(Math.max(currentPageIndex - 2, 0));
       } else {
-        // Default single page back
         setCurrentPageIndex(currentPageIndex - 1);
       }
+    } else {
+      goToPreviousChapter();
     }
   };
 
@@ -145,14 +273,12 @@ const MangaReader = ({
     }
   };
 
-  // Get current page
   const getCurrentPage = () => {
-    if (pages.pages.length === 0) return null;
+    if (!pages?.pages || pages.pages.length === 0) return null;
     return pages.pages[currentPageIndex];
   };
 
-  // Empty state
-  if (pages.pages.length === 0) {
+  if (!pages?.pages || pages.pages.length === 0) {
     return (
       <div className="h-full w-full flex justify-center items-center bg-background text-foreground">
         <div className="text-center">
@@ -173,9 +299,7 @@ const MangaReader = ({
       className="h-full w-full relative bg-background"
       ref={containerRef}
     >
-      {/* Reader Content */}
       <div className="h-full w-full" onClick={() => handleTapZone('center')}>
-        {/* Webtoon Mode */}
         {readingMode === "webtoon" ? (
           <div
             ref={webtoonRef}
@@ -199,53 +323,55 @@ const MangaReader = ({
                   loading="lazy"
                 />
               })}
+
+              <div className="w-full h-3 py-8 text-center text-muted-foreground text-sm">
+                {/*Need to implement Chapter page number just like in Tachimanga*/}
+                Loading next chapter...
+              </div>
             </div>
           </div>
         ) : (
-          /* Paged Mode (Left-to-Right or Right-to-Left) */
           <div className="h-full w-full flex justify-center items-center overflow-hidden">
             <div className="relative h-full w-full flex justify-center items-center">
               {readerPageLayout === "double" ? (
-                // Double page view
                 <div
                   className="flex justify-center items-center"
                   style={{transform: `scale(${readerZoom})`, transition: 'transform 0.2s ease'}}
                 >
-                  {/* Handle double page layout - show two pages side by side */}
                   {readingMode === 'right-to-left' ? (
-                    // For right-to-left manga, the right page comes first
                     <>
-                      {/* Right page (current page) */}
                       <img
                         src={manga.source_id === "local" ? convertFileSrc(pages.base_url + "/" + getCurrentPage()) : pages.base_url + "/" + getCurrentPage()}
                         alt={`Page ${currentPageIndex + 1}`}
                         className="max-h-[calc(100vh-40px)] object-contain"
                       />
 
-                      {/* Left page (next page) if available */}
-                      {currentPageIndex < pages.length - 1 && (
+                      {currentPageIndex < pages.pages.length - 1 && (
                         <img
-                          src={manga.source_id === "local" ? convertFileSrc(pages.base_url + "/" + pages[currentPageIndex + 1]) : pages.base_url + "/" + pages[currentPageIndex + 1]}
+                          src={manga.source_id === "local" ?
+                            convertFileSrc(pages.base_url + "/" + pages.pages[currentPageIndex + 1]) :
+                            pages.base_url + "/" + pages.pages[currentPageIndex + 1]}
                           alt={`Page ${currentPageIndex + 2}`}
                           className="max-h-[calc(100vh-40px)] object-contain"
                         />
                       )}
                     </>
                   ) : (
-                    // For left-to-right manga, the left page comes first
                     <>
-                      {/* Left page (previous page) if available and not the first page */}
                       {currentPageIndex > 0 && currentPageIndex % 2 === 1 && (
                         <img
-                          src={manga.source_id === "local" ? convertFileSrc(pages.base_url + "/" + pages[currentPageIndex - 1]) : pages.base_url + "/" + pages[currentPageIndex - 1]}
+                          src={manga.source_id === "local" ?
+                            convertFileSrc(pages.base_url + "/" + pages.pages[currentPageIndex - 1]) :
+                            pages.base_url + "/" + pages.pages[currentPageIndex - 1]}
                           alt={`Page ${currentPageIndex}`}
                           className="max-h-[calc(100vh-40px)] object-contain"
                         />
                       )}
 
-                      {/* Right page (current page) */}
                       <img
-                        src={manga.source_id === "local" ? convertFileSrc(pages.base_url + "/" + getCurrentPage()) : pages.base_url + "/"+ getCurrentPage()}
+                        src={manga.source_id === "local" ?
+                          convertFileSrc(pages.base_url + "/" + getCurrentPage()) :
+                          pages.base_url + "/" + getCurrentPage()}
                         alt={`Page ${currentPageIndex + 1}`}
                         className="max-h-[calc(100vh-40px)] object-contain"
                       />
@@ -253,9 +379,10 @@ const MangaReader = ({
                   )}
                 </div>
               ) : (
-                // Single page view
                 <img
-                  src={manga.source_id === "local" ? convertFileSrc(pages.base_url + "/" + getCurrentPage()) : pages.base_url + "/" + getCurrentPage()}
+                  src={manga.source_id === "local" ?
+                    convertFileSrc(pages.base_url + "/" + getCurrentPage()) :
+                    pages.base_url + "/" + getCurrentPage()}
                   alt={`Page ${currentPageIndex + 1}`}
                   className="max-h-full max-w-full object-contain"
                   style={{transform: `scale(${readerZoom})`, transition: 'transform 0.2s ease'}}
@@ -266,7 +393,6 @@ const MangaReader = ({
         )}
       </div>
 
-      {/* Tap Zones */}
       {readingMode !== "webtoon" && (
         <>
           <div
@@ -287,10 +413,8 @@ const MangaReader = ({
       )}
 
       <div className="absolute top-0 left-0 right-0 z-20 group">
-        {/* Invisible hover area - larger than the visible bar for easier interaction */}
         <div className="w-full h-16 absolute top-0 bg-transparent"/>
 
-        {/* Actual control bar - only visible on hover */}
         <div className={cn(
           "w-full bg-background/50 backdrop-blur-sm p-4 flex justify-between items-center transition-opacity duration-300",
           showSettings || showHelp ? "opacity-100" : "opacity-0 group-hover:opacity-100"
@@ -307,8 +431,8 @@ const MangaReader = ({
 
             <div className="text-sm px-3 py-1 text-foreground">
               {readingMode === "webtoon"
-                ? `${chapterTitle || "Chapter"}`
-                : `${currentPageIndex + 1} / ${pages.pages.length} ${chapterTitle ? `• ${chapterTitle}` : ""}`
+                ? `${chapterTitle || chapter?.title || "Chapter"}`
+                : `${currentPageIndex + 1} / ${pages.pages.length} ${chapterTitle || chapter?.title ? `• ${chapterTitle || chapter?.title}` : ""}`
               }
             </div>
           </div>
@@ -334,12 +458,10 @@ const MangaReader = ({
         </div>
       </div>
 
-      {/* Settings Panel */}
       {showSettings && (
         <SettingsOverlay handleClose={() => setShowSettings(false)}/>
       )}
 
-      {/* Help Overlay */}
       {showHelp && (
         <HelpOverlay handleClose={() => setShowHelp(false)} readingMode={readingMode}/>
       )}

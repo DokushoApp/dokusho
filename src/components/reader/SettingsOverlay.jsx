@@ -36,7 +36,6 @@ const SettingsOverlay = ({handleClose}) => {
       </div>
 
       <div className="p-4 space-y-4">
-        {/* Reading Mode */}
         <div className="space-y-2">
           <label className="block text-sm text-muted-foreground">Reading Mode</label>
           <div className="grid grid-cols-3 gap-1">
@@ -76,7 +75,6 @@ const SettingsOverlay = ({handleClose}) => {
           </div>
         </div>
 
-        {/* Page Layout - only show when not in webtoon mode */}
         {readingMode !== "webtoon" && (
           <div className="space-y-2">
             <label className="block text-sm text-muted-foreground">Page Layout</label>
@@ -107,7 +105,6 @@ const SettingsOverlay = ({handleClose}) => {
           </div>
         )}
 
-        {/* Zoom */}
         <div className="space-y-2">
           <label className="flex flex-row gap-x-2 text-sm text-muted-foreground">
             <span>Zoom</span>
